@@ -5,6 +5,16 @@ use chess_engine::square::Square;
 fn main() {
     let mut board = Board::default();
     board.move_piece(PieceMove::new(
+        Square::E2,
+        Square::E4,
+        MoveKind::DoublePawnPush,
+    ));
+    board.move_piece(PieceMove::new(
+        Square::D7,
+        Square::D5,
+        MoveKind::DoublePawnPush,
+    ));
+    board.move_piece(PieceMove::new(
         Square::H2,
         Square::H4,
         MoveKind::DoublePawnPush,

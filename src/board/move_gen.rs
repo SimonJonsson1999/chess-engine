@@ -116,6 +116,8 @@ impl MoveGenerator {
         MoveGenerator::generate_knight_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_king_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_rook_moves(&mut possible_moves, board, color);
+        MoveGenerator::generate_bishop_moves(&mut possible_moves, board, color);
+        MoveGenerator::generate_queen_moves(&mut possible_moves, board, color);
         for possible_move in &possible_moves {
             println!("{}", possible_move);
         }
@@ -162,6 +164,23 @@ impl MoveGenerator {
         }
     }
 
+    fn push_moves(
+        moves: &mut Vec<PieceMove>,
+        from: Square,
+        attacks: BitBoard,
+        empty: BitBoard,
+        enemies: BitBoard,
+    ) {
+        let quiets = attacks & empty;
+        for to in quiets.squares() {
+            moves.push(PieceMove::new(from, to, MoveKind::Quiet));
+        }
+
+        let captures = attacks & enemies;
+        for to in captures.squares() {
+            moves.push(PieceMove::new(from, to, MoveKind::Capture));
+        }
+    }
     #[inline]
     fn push_promotion_moves(
         moves: &mut Vec<PieceMove>,
@@ -183,6 +202,58 @@ impl MoveGenerator {
         }
     }
 
+    fn ray_attacks_from_sq(from_sq: Square, occupied: BitBoard, directions: &[(i8, i8)]) -> BitBoard {
+        let mut attacks = BitBoard(0);
+        let rank = from_sq.rank() as i8;
+        let file = from_sq.file() as i8;
+        let mut i = 0;
+        // Step in each direction and check if the aquare is empty or occupied
+        // update the attack bb accordingly and once occupied square or end of
+        // board is found, go to next direction
+        while i < directions.len() {
+            let (rank_direction, file_direction) = directions[i];
+            let mut j: i8 = 1;
+            // Step in direction j steps
+            while j < (BOARDWIDTH as i8){
+                // Calculate new rank and file afer stepping
+                let new_rank = rank + j*rank_direction;
+                let new_file = file + j*file_direction;
+                // Check if out of bounds after stepping in direction
+                // if so go to next direction
+                if new_rank < 0
+                    || new_rank >= 8
+                    || new_file < 0
+                    || new_file >= 8
+                {
+                    break
+                }
+
+                // Create the target square and check if it is occupied or not
+                // and if occupied ny enemy or friendly piece.
+                let target_index = new_rank * BOARDWIDTH as i8 + new_file;
+                let target_square = Square::from_index(target_index as u8);
+                let bb = BitBoard::from_square(target_square);
+                if (occupied & bb).is_empty(){
+                    // Empty square detected, possible to move to
+                    // Keep looking in this direction
+                    attacks.set(target_square);
+                    j += 1;
+                    continue;
+                }
+                else {
+                    // Piece detected, set square as possible to move to,
+                    // but do not keep searching in this direction (blocked)
+                    attacks.set(target_square);
+                    break;  
+                }
+
+                }
+        i += 1;         
+        }
+    attacks 
+    }
+
+    // Pawn Moves
     fn generate_pawn_moves(possible_moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
         MoveGenerator::generate_single_push_pawn_moves(board, color, possible_moves);
         MoveGenerator::generate_double_push_pawn_moves(board, color, possible_moves);
@@ -365,91 +436,38 @@ impl MoveGenerator {
     // TODO generate these moves using magic bitboards and access for each square using index. 
 
     // Rook Moves
-
-    fn rook_attacks_from_sq(from_sq: Square, board: &Board, color: Color) -> BitBoard {
-        let enemies = MoveGenerator::enemy_pieces(board, color);
-        let mut attacks = BitBoard(0);
-        let rank = from_sq.rank() as i8;
-        let file = from_sq.file() as i8;
-        let mut i = 0;
-        // Step in each direction and check if the aquare is empty or occupied
-        // update the attack bb accordingly and once occupied square or end of
-        // board is found, go to next direction
-        while i < ROOK_DIRECTIONS.len() {
-            let (rank_direction, file_direction) = ROOK_DIRECTIONS[i];
-            let mut j: i8 = 1;
-            // Step in direction j steps
-            while j < (BOARDWIDTH as i8){
-                // Calculate new rank and file afer stepping
-                let new_rank = rank + j*rank_direction;
-                let new_file = file + j*file_direction;
-                // Check if out of bounds after stepping in direction
-                // if so go to next direction
-                if new_rank < 0
-                    || new_rank >= 8
-                    || new_file < 0
-                    || new_file >= 8
-                {
-                    break
-                }
-
-                // Create the target square and check if it is occupied or not
-                // and if occupied ny enemy or friendly piece.
-                let target_index = new_rank * BOARDWIDTH as i8 + new_file;
-                let target_square = Square::from_index(target_index as u8);
-                let bb = BitBoard::from_square(target_square);
-                if board.piece_on_square[target_square].is_none(){
-                    // Empty square detected, possible to move to
-                    // Keep looking in this direction
-                    attacks.set(target_square);
-                    j += 1;
-                    continue;
-                }
-                else if (bb & enemies).is_non_empty() {
-                    // Enemy piece detected, set square as possible to move to,
-                    // but do not keep searching in this direction (blocked)
-                    attacks.set(target_square);
-                    break;  
-                }
-                else {
-                    // Friendly piece blocks, go to next direction
-                    break;
-                }
-                }
-        i += 1;         
-        }
-        
-
-    attacks 
-    }
-    
-
-
-
-
     fn generate_rook_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
+        let occupied: BitBoard = !board.empty;
         let rook_bitboard = board.bitboards[color][PieceType::Rook];
-        for from_sq in  rook_bitboard.squares(){
-            let attacks = MoveGenerator::rook_attacks_from_sq(from_sq, board, color);
-            
-
-            // TODO Double check that this is correct, was copied from knight function.
-            let empty_destinations = attacks & board.empty;
-            for to_square in empty_destinations.squares() {
-                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Quiet));
-            }
-            let enemy_destinations = attacks & enemies;
-            for to_square in enemy_destinations.squares() {
-                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Capture));
-            }
+        for from_sq in rook_bitboard.squares(){
+            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &ROOK_DIRECTIONS);
+            MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
         } 
-
     }
 
     // Bishop moves
-
+    fn generate_bishop_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+        let enemies = MoveGenerator::enemy_pieces(board, color);
+        let occupied: BitBoard = !board.empty;
+        let bishop_bitboard = board.bitboards[color][PieceType::Bishop];
+        for from_sq in bishop_bitboard.squares(){
+            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &BISHOP_DIRECTIONS);
+            MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
+        }
+    }
     // Queen moves
+    fn generate_queen_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+        let enemies = MoveGenerator::enemy_pieces(board, color);
+        let occupied: BitBoard = !board.empty;
+        let queen_bitboard = board.bitboards[color][PieceType::Queen];
+        for from_sq in queen_bitboard.squares(){
+            let attacks_diag = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &BISHOP_DIRECTIONS);
+            let attacks_line = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &ROOK_DIRECTIONS);
+            let attacks = attacks_diag | attacks_line;
+            MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
+        } 
+    }
 
     // Knight moves
     const fn knight_attacks_from(square: Square) -> BitBoard {
