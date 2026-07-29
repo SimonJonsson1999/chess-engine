@@ -10,7 +10,7 @@ use crate::square::{Square, SquareMap};
 // Each bitboard is 64 bits, where each bit will represent if the piece is present or not
 pub struct Board {
     pub bitboards: BitBoards,
-    piece_on_square: SquareMap<Option<Piece>>,
+    pub piece_on_square: SquareMap<Option<Piece>>,
     pub empty: BitBoard,
     pub white: BitBoard,
     pub black: BitBoard,

@@ -1,9 +1,8 @@
 use std::println;
-
+use std::ops::Index;
 use crate::bb;
 use crate::bitboard::BitBoard;
 use crate::board::Board;
-use crate::log::Move;
 use crate::piece::{Color, MoveKind, PieceMove, PieceType};
 use crate::square::Square;
 
@@ -36,12 +35,78 @@ pub const KING_DIRECTIONS: [(i8, i8); 8] = [
     (-1, -1),
 ];
 
-const PROMOTION_PIECES: [PieceType; 4] = [
+pub const ROOK_DIRECTIONS: [(i8, i8); 4] = [
+    (1, 0),
+    (-1, 0),
+    (0, 1),
+    (0, -1),
+];
+
+pub const BISHOP_DIRECTIONS: [(i8, i8); 4] = [
+    (1, 1),
+    (-1, 1),
+    (1, -1),
+    (-1, -1),
+];
+
+pub const PROMOTION_PIECES: [PieceType; 4] = [
     PieceType::Queen,
     PieceType::Rook,
     PieceType::Bishop,
     PieceType::Knight,
 ];
+
+
+
+// Structure to hold the 64 bitboards for attacks
+// Needed so we can index using square, removing annoying 'square.index() as usize' everywhere
+// My hope is that this gets optimized away at compile time so no runtime overhead,
+// just improving readability
+pub struct AttackTable([BitBoard; 64]);
+
+impl AttackTable {
+    pub const fn new(bitboards: [BitBoard; 64]) -> Self {
+        Self(bitboards)
+    }
+}
+impl Index<Square> for AttackTable {
+    type Output = BitBoard;
+
+    fn index(&self, square: Square) -> &Self::Output {
+        &self.0[square as usize]
+    }
+}
+// Generate a array of 64 bitboards for knight attacks
+// indexed by the square.index()
+const fn generate_knight_bitboards() -> AttackTable {
+    let mut bitboards = [BitBoard(0); 64];
+    let mut i: u8 = 0;
+    while i < 64 {
+        let square = Square::from_index(i);
+        let knight_attacks: BitBoard = MoveGenerator::knight_attacks_from(square);
+        bitboards[square.index() as usize] = knight_attacks;
+        i += 1;
+    }
+    AttackTable::new(bitboards)
+}
+
+pub const KNIGHT_ATTACKS: AttackTable = generate_knight_bitboards();
+
+// Generate a array of 64 bitboards for king attacks
+// indexed by the square.index()
+const fn generate_king_bitboards() -> AttackTable {
+    let mut bitboards = [BitBoard(0); 64];
+    let mut i: u8 = 0;
+    while i < 64 {
+        let square = Square::from_index(i);
+        let king_attacks: BitBoard = MoveGenerator::king_attacks_from(square);
+        bitboards[square.index() as usize] = king_attacks;
+        i += 1;
+    }
+    AttackTable::new(bitboards)
+}
+
+pub const KING_ATTACKS: AttackTable = generate_king_bitboards();
 
 pub struct MoveGenerator {}
 impl MoveGenerator {
@@ -50,6 +115,7 @@ impl MoveGenerator {
         MoveGenerator::generate_pawn_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_knight_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_king_moves(&mut possible_moves, board, color);
+        MoveGenerator::generate_rook_moves(&mut possible_moves, board, color);
         for possible_move in &possible_moves {
             println!("{}", possible_move);
         }
@@ -296,10 +362,97 @@ impl MoveGenerator {
         );
     }
 
+    // TODO generate these moves using magic bitboards and access for each square using index. 
+
     // Rook Moves
 
+    fn rook_attacks_from_sq(from_sq: Square, board: &Board, color: Color) -> BitBoard {
+        let enemies = MoveGenerator::enemy_pieces(board, color);
+        let mut attacks = BitBoard(0);
+        let rank = from_sq.rank() as i8;
+        let file = from_sq.file() as i8;
+        let mut i = 0;
+        // Step in each direction and check if the aquare is empty or occupied
+        // update the attack bb accordingly and once occupied square or end of
+        // board is found, go to next direction
+        while i < ROOK_DIRECTIONS.len() {
+            let (rank_direction, file_direction) = ROOK_DIRECTIONS[i];
+            let mut j: i8 = 1;
+            // Step in direction j steps
+            while j < (BOARDWIDTH as i8){
+                // Calculate new rank and file afer stepping
+                let new_rank = rank + j*rank_direction;
+                let new_file = file + j*file_direction;
+                // Check if out of bounds after stepping in direction
+                // if so go to next direction
+                if new_rank < 0
+                    || new_rank >= 8
+                    || new_file < 0
+                    || new_file >= 8
+                {
+                    break
+                }
+
+                // Create the target square and check if it is occupied or not
+                // and if occupied ny enemy or friendly piece.
+                let target_index = new_rank * BOARDWIDTH as i8 + new_file;
+                let target_square = Square::from_index(target_index as u8);
+                let bb = BitBoard::from_square(target_square);
+                if board.piece_on_square[target_square].is_none(){
+                    // Empty square detected, possible to move to
+                    // Keep looking in this direction
+                    attacks.set(target_square);
+                    j += 1;
+                    continue;
+                }
+                else if (bb & enemies).is_non_empty() {
+                    // Enemy piece detected, set square as possible to move to,
+                    // but do not keep searching in this direction (blocked)
+                    attacks.set(target_square);
+                    break;  
+                }
+                else {
+                    // Friendly piece blocks, go to next direction
+                    break;
+                }
+                }
+        i += 1;         
+        }
+        
+
+    attacks 
+    }
+    
+
+
+
+
+    fn generate_rook_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+        let enemies = MoveGenerator::enemy_pieces(board, color);
+        let rook_bitboard = board.bitboards[color][PieceType::Rook];
+        for from_sq in  rook_bitboard.squares(){
+            let attacks = MoveGenerator::rook_attacks_from_sq(from_sq, board, color);
+            
+
+            // TODO Double check that this is correct, was copied from knight function.
+            let empty_destinations = attacks & board.empty;
+            for to_square in empty_destinations.squares() {
+                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Quiet));
+            }
+            let enemy_destinations = attacks & enemies;
+            for to_square in enemy_destinations.squares() {
+                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Capture));
+            }
+        } 
+
+    }
+
+    // Bishop moves
+
+    // Queen moves
+
     // Knight moves
-    fn knight_attacks_from(square: Square) -> BitBoard {
+    const fn knight_attacks_from(square: Square) -> BitBoard {
         let mut attacks = BitBoard(0);
 
         // Extrac the rank and file from the square the knight is located on
@@ -307,64 +460,80 @@ impl MoveGenerator {
         let file = square.file() as i8;
         
         // Loop through all directions the knight can jump and calculate new rank and file indexes
-        for (rank_offset, file_offset) in KNIGHT_DIRECTIONS {
-            let target_rank = rank + rank_offset;
-            let target_file = file + file_offset;
-            
-            // Check that the new indexes did not wrap around, if they did it's not a valid move
-            if !(0..8).contains(&target_rank) || !(0..8).contains(&target_file) {
-                continue;
-            }
-            
-            // Calculate the index of the square from the new rank and file indexes
-            let target_index = target_rank * (BOARDWIDTH as i8) + target_file;
-            let target_square = Square::from_index(target_index as u8);
+        let mut i = 0;
+            while i < KNIGHT_DIRECTIONS.len() {
+                let (rank_offset, file_offset) = KNIGHT_DIRECTIONS[i];
 
-            attacks.set(target_square);
+                let target_rank = rank + rank_offset;
+                let target_file = file + file_offset;
+
+                // Skip moves that would leave the board.
+                if target_rank < 0
+                    || target_rank >= 8
+                    || target_file < 0
+                    || target_file >= 8
+                {
+                    i += 1;
+                    continue;
+                }
+                
+                // Calculate the index of the square from the new rank and file indexes
+                let target_index = target_rank * BOARDWIDTH as i8 + target_file;
+                let target_square = Square::from_index(target_index as u8);
+
+                attacks.set(target_square);
+
+                i += 1;
+            }
+        attacks
         }
 
-        attacks
-    }
+        
 
     fn generate_knight_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
-        for from in board.bitboards[color][PieceType::Knight].squares() {
-            let attacks = MoveGenerator::knight_attacks_from(from);
+        let knight_bitboard: BitBoard = board.bitboards[color][PieceType::Knight];
+        for from_sq in  knight_bitboard.squares(){
+            let attacks = KNIGHT_ATTACKS[from_sq];
             
             let empty_destinations = attacks & board.empty;
-            for square in empty_destinations.squares() {
-                moves.push(PieceMove::new(from, square, MoveKind::Quiet));
+            for to_square in empty_destinations.squares() {
+                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Quiet));
             }
             let enemy_destinations = attacks & enemies;
-            for square in enemy_destinations.squares() {
-                moves.push(PieceMove::new(from, square, MoveKind::Capture));
+            for to_square in enemy_destinations.squares() {
+                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Capture));
             }
         }
     }
-
+    
     // King moves
-    fn king_attacks_from(square: Square) -> BitBoard {
+    const fn king_attacks_from(square: Square) -> BitBoard {
         let mut attacks = BitBoard(0);
 
-        // Extrac the rank and file from the square the king is located on
+        // Extract the rank and file from the square the king is located on.
         let rank = square.rank() as i8;
         let file = square.file() as i8;
 
-        // Loop through all directions the King can go and calculate new rank and file indexes
-        for (rank_offset, file_offset) in KING_DIRECTIONS {
+        // Loop through all directions the king can move.
+        let mut i = 0;
+        while i < KING_DIRECTIONS.len() {
+            let (rank_offset, file_offset) = KING_DIRECTIONS[i];
+
             let target_rank = rank + rank_offset;
             let target_file = file + file_offset;
-            
-            // Check that the new indexes did not wrap around, if they did it's not a valid move
-            if !(0..8).contains(&target_rank) || !(0..8).contains(&target_file) {
-                continue;
-            }
-            
-            // Calculate the index of the square from the new rank and file indexes
-            let target_index = target_rank * (BOARDWIDTH as i8) + target_file;
-            let target_square = Square::from_index(target_index as u8);
 
-            attacks.set(target_square);
+            // Skip moves that would leave the board.
+            if target_rank >= 0
+                && target_rank < 8
+                && target_file >= 0
+                && target_file < 8
+            {
+                let target_index = target_rank * BOARDWIDTH as i8 + target_file;
+                attacks.set(Square::from_index(target_index as u8));
+            }
+
+            i += 1;
         }
         attacks
     }
@@ -375,7 +544,7 @@ impl MoveGenerator {
                                                                     .squares()
                                                                     .pop()
                                                                     .expect("King not found");
-        let attacks = MoveGenerator::king_attacks_from(square);
+        let attacks = KING_ATTACKS[square];
         let empty_destinations = attacks & board.empty;
             for attack_square in empty_destinations.squares() {
                 moves.push(PieceMove::new(square, attack_square, MoveKind::Quiet));
@@ -384,6 +553,6 @@ impl MoveGenerator {
             for attack_square in enemy_destinations.squares() {
                 moves.push(PieceMove::new(square, attack_square, MoveKind::Capture));
             }
-}
+    }
 
 }

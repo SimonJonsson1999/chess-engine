@@ -15,18 +15,25 @@ macro_rules! bb {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BitBoard(pub u64);
 impl BitBoard {
+    #[inline]
     pub const fn from_square(square: Square) -> Self {
         BitBoard(1u64 << (square as u8))
     }
-    pub fn set(&mut self, square: Square) {
+    pub const fn set(&mut self, square: Square) {
         self.0 |= 1u64 << (square as u8);
     }
-    pub fn clear(&mut self, square: Square) {
+    pub const fn clear(&mut self, square: Square) {
         self.0 &= !(1u64 << (square as u8))
     }
-    pub fn is_set(&self, square: Square) -> bool {
+    pub const fn is_set(&self, square: Square) -> bool {
         let square_mask = 1u64 << (square as u8);
         (self.0 & square_mask) != 0
+    }
+    pub const fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+    pub const fn is_non_empty(&self) -> bool {
+        self.0 != 0
     }
     pub fn squares(&self) -> Vec<Square> {
         let mut squares = Vec::new();
