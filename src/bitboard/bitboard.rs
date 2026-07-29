@@ -87,11 +87,30 @@ impl BitOr for BitBoard {
         BitBoard(self.0 | rhs.0)
     }
 }
+
+impl BitOr<Square> for BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn bitor(self, rhs: Square) -> Self::Output {
+        BitBoard(self.0 | (1u64 << rhs.index()))
+    }
+}
+
 impl BitAnd for BitBoard {
     type Output = BitBoard;
 
     fn bitand(self, rhs: Self) -> Self::Output {
         BitBoard(self.0 & rhs.0)
+    }
+}
+
+impl BitAnd<Square> for BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn bitand(self, rhs: Square) -> Self::Output {
+        BitBoard(self.0 & (1u64 << rhs.index()))
     }
 }
 

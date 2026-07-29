@@ -76,7 +76,20 @@ impl Square {
         debug_assert!(index < 64);
         unsafe { std::mem::transmute(index) }
     }
+    pub const fn from_rank_file(rank: u8, file: u8) -> Self {
+        debug_assert!(rank < 8);
+        debug_assert!(file < 8);
 
+        let index = rank * 8 + file;
+        Square::from_index(index)
+    }
+    pub const fn try_from_rank_file(rank: i8, file: i8) -> Option<Self> {
+        if rank < 0 || rank >= 8 || file < 0 || file >= 8 {
+            None
+        } else {
+            Some(Self::from_rank_file(rank as u8, file as u8))
+        }
+    }
     pub const fn index(self) -> u8 {
         self as u8
     }

@@ -1,9 +1,9 @@
-use std::println;
 use std::ops::Index;
 use crate::bb;
 use crate::bitboard::BitBoard;
 use crate::board::Board;
-use crate::piece::{Color, MoveKind, PieceMove, PieceType};
+use crate::log::LogEntry;
+use crate::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
 use crate::square::Square;
 
 // Define of constans used for move generation
@@ -35,14 +35,14 @@ pub const KING_DIRECTIONS: [(i8, i8); 8] = [
     (-1, -1),
 ];
 
-pub const ROOK_DIRECTIONS: [(i8, i8); 4] = [
+pub const STRAIGHT_DIRECTIONS: [(i8, i8); 4] = [
     (1, 0),
     (-1, 0),
     (0, 1),
     (0, -1),
 ];
 
-pub const BISHOP_DIRECTIONS: [(i8, i8); 4] = [
+pub const DIAG_DIRECTIONS: [(i8, i8); 4] = [
     (1, 1),
     (-1, 1),
     (1, -1),
@@ -105,24 +105,77 @@ const fn generate_king_bitboards() -> AttackTable {
     }
     AttackTable::new(bitboards)
 }
-
 pub const KING_ATTACKS: AttackTable = generate_king_bitboards();
+
+const fn generate_pawn_attack_bitboards(color: Color) -> AttackTable {
+    let mut attacks = [BitBoard(0); 64];
+
+    let mut index = 0;
+    while index < 64 {
+        let square = Square::from_index(index);
+
+        let rank = square.rank() as i8;
+        let file = square.file() as i8;
+
+        match color {
+            Color::White => {
+                if let Some(target) = Square::try_from_rank_file(rank + 1, file - 1) {
+                    attacks[index as usize].set(target);
+                }
+
+                if let Some(target) = Square::try_from_rank_file(rank + 1, file + 1) {
+                    attacks[index as usize].set(target);
+                }
+            }
+
+            Color::Black => {
+                if let Some(target) = Square::try_from_rank_file(rank - 1, file - 1) {
+                    attacks[index as usize].set(target);
+                }
+
+                if let Some(target) = Square::try_from_rank_file(rank - 1, file + 1) {
+                    attacks[index as usize].set(target);
+                }
+            }
+        }
+
+        index += 1;
+    }
+
+    AttackTable::new(attacks)
+}
+
+const WHITE_PAWN_ATTACKS: AttackTable = generate_pawn_attack_bitboards(Color::White);
+const BLACK_PAWN_ATTACKS: AttackTable = generate_pawn_attack_bitboards(Color::Black);
 
 pub struct MoveGenerator {}
 impl MoveGenerator {
-    pub fn generate_all_moves(board: &Board, color: Color) -> Vec<PieceMove> {
-        let mut possible_moves = Vec::<PieceMove>::new();
+
+    pub fn generate_valid_moves(board: &mut Board, color: Color) -> PieceMoveList {
+        let valid_moves: PieceMoveList = MoveGenerator::generate_all_moves(board, color)
+            .iter()
+            .copied()
+            .filter(|mv| MoveGenerator::legal_move(*mv, board, color))
+            .collect();
+
+        for valid_move in valid_moves.iter() {
+            println!("{}", valid_move);
+        }
+
+        valid_moves
+    }
+    fn generate_all_moves(board: &Board, color: Color) -> PieceMoveList {
+        let mut possible_moves = PieceMoveList::new();
         MoveGenerator::generate_pawn_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_knight_moves(&mut possible_moves, board, color);
         MoveGenerator::generate_king_moves(&mut possible_moves, board, color);
-        MoveGenerator::generate_rook_moves(&mut possible_moves, board, color);
-        MoveGenerator::generate_bishop_moves(&mut possible_moves, board, color);
-        MoveGenerator::generate_queen_moves(&mut possible_moves, board, color);
-        for possible_move in &possible_moves {
-            println!("{}", possible_move);
-        }
+        MoveGenerator::generate_diag_slider_moves(&mut possible_moves, board, color);
+        MoveGenerator::generate_straight_slider_moves(&mut possible_moves, board, color);
+        MoveGenerator::generate_castling(&mut possible_moves, board, color);
         possible_moves
     }
+
+
     #[inline]
     fn enemy_pieces(board: &Board, color: Color) -> BitBoard {
         match color {
@@ -149,7 +202,7 @@ impl MoveGenerator {
 
     #[inline]
     fn push_pawn_moves(
-        moves: &mut Vec<PieceMove>,
+        moves: &mut PieceMoveList,
         destinations: BitBoard,
         color: Color,
         offset: u8,
@@ -165,7 +218,7 @@ impl MoveGenerator {
     }
 
     fn push_moves(
-        moves: &mut Vec<PieceMove>,
+        moves: &mut PieceMoveList,
         from: Square,
         attacks: BitBoard,
         empty: BitBoard,
@@ -183,7 +236,7 @@ impl MoveGenerator {
     }
     #[inline]
     fn push_promotion_moves(
-        moves: &mut Vec<PieceMove>,
+        moves: &mut PieceMoveList,
         destinations: BitBoard,
         color: Color,
         offset: u8,
@@ -218,22 +271,11 @@ impl MoveGenerator {
                 // Calculate new rank and file afer stepping
                 let new_rank = rank + j*rank_direction;
                 let new_file = file + j*file_direction;
-                // Check if out of bounds after stepping in direction
-                // if so go to next direction
-                if new_rank < 0
-                    || new_rank >= 8
-                    || new_file < 0
-                    || new_file >= 8
-                {
-                    break
-                }
-
-                // Create the target square and check if it is occupied or not
-                // and if occupied ny enemy or friendly piece.
-                let target_index = new_rank * BOARDWIDTH as i8 + new_file;
-                let target_square = Square::from_index(target_index as u8);
-                let bb = BitBoard::from_square(target_square);
-                if (occupied & bb).is_empty(){
+                let Some(target_square) = Square::try_from_rank_file(new_rank, new_file) else {
+                    // if square outside board, go to next direction
+                    break;
+                };
+                if (occupied & target_square).is_empty(){
                     // Empty square detected, possible to move to
                     // Keep looking in this direction
                     attacks.set(target_square);
@@ -246,7 +288,6 @@ impl MoveGenerator {
                     attacks.set(target_square);
                     break;  
                 }
-
                 }
         i += 1;         
         }
@@ -254,7 +295,7 @@ impl MoveGenerator {
     }
 
     // Pawn Moves
-    fn generate_pawn_moves(possible_moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+    fn generate_pawn_moves(possible_moves: &mut PieceMoveList, board: &Board, color: Color) {
         MoveGenerator::generate_single_push_pawn_moves(board, color, possible_moves);
         MoveGenerator::generate_double_push_pawn_moves(board, color, possible_moves);
         MoveGenerator::generate_left_capture_pawn_moves(board, color, possible_moves);
@@ -266,7 +307,7 @@ impl MoveGenerator {
         MoveGenerator::generate_enpassant_right_moves(board, color, possible_moves);
     }
 
-    fn generate_single_push_pawn_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_single_push_pawn_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let destinations = match color {
             Color::White => MoveGenerator::pawn_step(bb & !RANK7, color, BOARDWIDTH) & board.empty,
@@ -275,7 +316,7 @@ impl MoveGenerator {
         MoveGenerator::push_pawn_moves(moves, destinations, color, BOARDWIDTH, MoveKind::Quiet);
     }
 
-    fn generate_double_push_pawn_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_double_push_pawn_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let destinations = match color {
             Color::White => {
@@ -298,7 +339,7 @@ impl MoveGenerator {
         );
     }
 
-    fn generate_left_capture_pawn_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_left_capture_pawn_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let enemies = MoveGenerator::enemy_pieces(board, color);
         // To get squares 1 step forward and to the left we need to shift
@@ -320,7 +361,7 @@ impl MoveGenerator {
         );
     }
 
-    fn generate_right_capture_pawn_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_right_capture_pawn_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let enemies = MoveGenerator::enemy_pieces(board, color);
         // To get squares 1 step forward and to the right we need to shift
@@ -342,7 +383,7 @@ impl MoveGenerator {
         );
     }
 
-    fn generate_promotion_pawn_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_promotion_pawn_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let destinations = match color {
             Color::White => MoveGenerator::pawn_step(bb & RANK7, color, BOARDWIDTH) & board.empty,
@@ -354,7 +395,7 @@ impl MoveGenerator {
     fn generate_promotion_left_capture_pawn_moves(
         board: &Board,
         color: Color,
-        moves: &mut Vec<PieceMove>,
+        moves: &mut PieceMoveList,
     ) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let enemies = MoveGenerator::enemy_pieces(board, color);
@@ -372,7 +413,7 @@ impl MoveGenerator {
     fn generate_promotion_right_capture_pawn_moves(
         board: &Board,
         color: Color,
-        moves: &mut Vec<PieceMove>,
+        moves: &mut PieceMoveList,
     ) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let enemies = MoveGenerator::enemy_pieces(board, color);
@@ -387,18 +428,17 @@ impl MoveGenerator {
         MoveGenerator::push_promotion_moves(moves, destinations, color, BOARDWIDTH + 1u8, true);
     }
 
-    fn generate_enpassant_left_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_enpassant_left_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let Some(enpassant_sq) = board.enpassant else {
             return;
         };
-        let enpassant_bb = BitBoard::from_square(enpassant_sq);
         let destinations = match color {
             Color::White => {
-                MoveGenerator::pawn_step(bb & (!FILEA), color, BOARDWIDTH - 1u8) & enpassant_bb
+                MoveGenerator::pawn_step(bb & (!FILEA), color, BOARDWIDTH - 1u8) & enpassant_sq
             }
             Color::Black => {
-                MoveGenerator::pawn_step(bb & (!FILEH), color, BOARDWIDTH - 1u8) & enpassant_bb
+                MoveGenerator::pawn_step(bb & (!FILEH), color, BOARDWIDTH - 1u8) & enpassant_sq
             }
         };
         MoveGenerator::push_pawn_moves(
@@ -410,18 +450,17 @@ impl MoveGenerator {
         );
     }
 
-    fn generate_enpassant_right_moves(board: &Board, color: Color, moves: &mut Vec<PieceMove>) {
+    fn generate_enpassant_right_moves(board: &Board, color: Color, moves: &mut PieceMoveList) {
         let bb = board.bitboards[color][PieceType::Pawn];
         let Some(enpassant_sq) = board.enpassant else {
             return;
         };
-        let enpassant_bb = BitBoard::from_square(enpassant_sq);
         let destinations = match color {
             Color::White => {
-                MoveGenerator::pawn_step(bb & (!FILEH), color, BOARDWIDTH + 1u8) & enpassant_bb
+                MoveGenerator::pawn_step(bb & (!FILEH), color, BOARDWIDTH + 1u8) & enpassant_sq
             }
             Color::Black => {
-                MoveGenerator::pawn_step(bb & (!FILEA), color, BOARDWIDTH + 1u8) & enpassant_bb
+                MoveGenerator::pawn_step(bb & (!FILEA), color, BOARDWIDTH + 1u8) & enpassant_sq
             }
         };
         MoveGenerator::push_pawn_moves(
@@ -435,36 +474,25 @@ impl MoveGenerator {
 
     // TODO generate these moves using magic bitboards and access for each square using index. 
 
-    // Rook Moves
-    fn generate_rook_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+
+    fn generate_diag_slider_moves(moves: &mut PieceMoveList, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
         let occupied: BitBoard = !board.empty;
-        let rook_bitboard = board.bitboards[color][PieceType::Rook];
-        for from_sq in rook_bitboard.squares(){
-            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &ROOK_DIRECTIONS);
+        let slider_bitboard = board.bitboards[color][PieceType::Queen] |
+                                board.bitboards[color][PieceType::Bishop];
+        for from_sq in slider_bitboard.squares(){
+            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &DIAG_DIRECTIONS);
             MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
         } 
     }
 
-    // Bishop moves
-    fn generate_bishop_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+    fn generate_straight_slider_moves(moves: &mut PieceMoveList, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
         let occupied: BitBoard = !board.empty;
-        let bishop_bitboard = board.bitboards[color][PieceType::Bishop];
-        for from_sq in bishop_bitboard.squares(){
-            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &BISHOP_DIRECTIONS);
-            MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
-        }
-    }
-    // Queen moves
-    fn generate_queen_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
-        let enemies = MoveGenerator::enemy_pieces(board, color);
-        let occupied: BitBoard = !board.empty;
-        let queen_bitboard = board.bitboards[color][PieceType::Queen];
-        for from_sq in queen_bitboard.squares(){
-            let attacks_diag = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &BISHOP_DIRECTIONS);
-            let attacks_line = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &ROOK_DIRECTIONS);
-            let attacks = attacks_diag | attacks_line;
+        let straight_bitboard = board.bitboards[color][PieceType::Queen] |
+                                board.bitboards[color][PieceType::Rook];
+        for from_sq in straight_bitboard.squares(){
+            let attacks = MoveGenerator::ray_attacks_from_sq(from_sq, occupied, &STRAIGHT_DIRECTIONS);
             MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
         } 
     }
@@ -485,20 +513,11 @@ impl MoveGenerator {
                 let target_rank = rank + rank_offset;
                 let target_file = file + file_offset;
 
-                // Skip moves that would leave the board.
-                if target_rank < 0
-                    || target_rank >= 8
-                    || target_file < 0
-                    || target_file >= 8
-                {
+                let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+                    // if square outside board, go to next direction
                     i += 1;
                     continue;
-                }
-                
-                // Calculate the index of the square from the new rank and file indexes
-                let target_index = target_rank * BOARDWIDTH as i8 + target_file;
-                let target_square = Square::from_index(target_index as u8);
-
+                };
                 attacks.set(target_square);
 
                 i += 1;
@@ -508,20 +527,12 @@ impl MoveGenerator {
 
         
 
-    fn generate_knight_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+    fn generate_knight_moves(moves: &mut PieceMoveList, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
         let knight_bitboard: BitBoard = board.bitboards[color][PieceType::Knight];
         for from_sq in  knight_bitboard.squares(){
             let attacks = KNIGHT_ATTACKS[from_sq];
-            
-            let empty_destinations = attacks & board.empty;
-            for to_square in empty_destinations.squares() {
-                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Quiet));
-            }
-            let enemy_destinations = attacks & enemies;
-            for to_square in enemy_destinations.squares() {
-                moves.push(PieceMove::new(from_sq, to_square, MoveKind::Capture));
-            }
+            MoveGenerator::push_moves(moves, from_sq, attacks, board.empty, enemies);
         }
     }
     
@@ -541,36 +552,111 @@ impl MoveGenerator {
             let target_rank = rank + rank_offset;
             let target_file = file + file_offset;
 
-            // Skip moves that would leave the board.
-            if target_rank >= 0
-                && target_rank < 8
-                && target_file >= 0
-                && target_file < 8
-            {
-                let target_index = target_rank * BOARDWIDTH as i8 + target_file;
-                attacks.set(Square::from_index(target_index as u8));
-            }
-
+            let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+                // if square outside board, go to next direction
+                i += 1;
+                continue;
+            };
+                attacks.set(target_square);
             i += 1;
-        }
+            }
         attacks
-    }
+        }
+        
+    
 
-    fn generate_king_moves(moves: &mut Vec<PieceMove>, board: &Board, color: Color) {
+    fn generate_king_moves(moves: &mut PieceMoveList, board: &Board, color: Color) {
         let enemies = MoveGenerator::enemy_pieces(board, color);
-        let square = board.bitboards[color][PieceType::King]
-                                                                    .squares()
-                                                                    .pop()
-                                                                    .expect("King not found");
+        let square = board.king(color);
         let attacks = KING_ATTACKS[square];
-        let empty_destinations = attacks & board.empty;
-            for attack_square in empty_destinations.squares() {
-                moves.push(PieceMove::new(square, attack_square, MoveKind::Quiet));
-            }
-            let enemy_destinations = attacks & enemies;
-            for attack_square in enemy_destinations.squares() {
-                moves.push(PieceMove::new(square, attack_square, MoveKind::Capture));
-            }
+        MoveGenerator::push_moves(moves, square, attacks, board.empty, enemies);
     }
 
+
+
+    pub fn is_square_attacked(
+        board: &Board,
+        square: Square,
+        by: Color,
+    ) -> bool {
+            let occupied = !board.empty;
+            let diagonal = MoveGenerator::ray_attacks_from_sq(
+                                                square,
+                                                occupied,
+                                                &DIAG_DIRECTIONS,
+                                        );
+            let straight = MoveGenerator::ray_attacks_from_sq(
+                                                square,
+                                                occupied,
+                                                &STRAIGHT_DIRECTIONS,
+                                        );
+            let enemy_queens = board.bitboards[by][PieceType::Queen];
+            let enemy_rooks = board.bitboards[by][PieceType::Rook];
+            let enemy_bishops = board.bitboards[by][PieceType::Bishop];
+            let enemy_pawns = board.bitboards[by][PieceType::Pawn];
+            let pawn_attackers = match by {
+                Color::White => BLACK_PAWN_ATTACKS[square],
+                Color::Black => WHITE_PAWN_ATTACKS[square],
+            };
+
+
+            (KNIGHT_ATTACKS[square] & board.bitboards[by][PieceType::Knight]).is_non_empty() ||
+            (KING_ATTACKS[square] & board.bitboards[by][PieceType::King]).is_non_empty() ||
+            (diagonal & (enemy_bishops | enemy_queens)).is_non_empty() ||
+            (straight & (enemy_rooks | enemy_queens)).is_non_empty() ||
+            (pawn_attackers & enemy_pawns).is_non_empty()
+    }
+    pub fn generate_castling(moves: &mut PieceMoveList, board: &Board, color: Color) {
+        match color {
+            Color::White => {
+                if board.castling_rights.white_kingside && board.empty.is_set(Square::F1) && board.empty.is_set(Square::G1) {
+                    moves.push(PieceMove::new(Square::E1, Square::G1, MoveKind::KingCastle))
+                }
+                if board.castling_rights.white_queenside && board.empty.is_set(Square::B1) && board.empty.is_set(Square::C1) && board.empty.is_set(Square::D1){
+                    moves.push(PieceMove::new(Square::E1, Square::C1, MoveKind::QueenCastle))
+                }
+            },
+            Color::Black => {
+                if board.castling_rights.black_kingside && board.empty.is_set(Square::F8) && board.empty.is_set(Square::G8) {
+                    moves.push(PieceMove::new(Square::E8, Square::G8, MoveKind::KingCastle))
+                }
+                if board.castling_rights.black_queenside && board.empty.is_set(Square::B8) && board.empty.is_set(Square::C8) && board.empty.is_set(Square::D8) {
+                    moves.push(PieceMove::new(Square::E8, Square::C8, MoveKind::QueenCastle))
+                }
+            }
+        }
+    }
+
+    pub fn legal_move(psuedo_legal_move: PieceMove, board: &mut Board, color: Color) -> bool {
+        let opposite_color = match color {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        };
+        // TODO check legal castling
+        if psuedo_legal_move.kind == MoveKind::KingCastle {
+            let (through, destination) = match color {
+                                                            Color::White => (Square::F1, Square::G1),
+                                                            Color::Black => (Square::F8, Square::G8),
+                                                        };
+            let legal = !MoveGenerator::is_square_attacked(board, through, opposite_color) &&
+                                        !MoveGenerator::is_square_attacked(board, destination, opposite_color) &&
+                                        !MoveGenerator::is_square_attacked(board, board.king(color), opposite_color);
+            return legal
+        }
+        if psuedo_legal_move.kind == MoveKind::QueenCastle {
+            let (through, destination) = match color {
+                                                            Color::White => (Square::D1, Square::C1),
+                                                            Color::Black => (Square::D8, Square::C8),
+                                                        };
+            let legal = !MoveGenerator::is_square_attacked(board, through, opposite_color) &&
+                                        !MoveGenerator::is_square_attacked(board, destination, opposite_color) &&
+                                        !MoveGenerator::is_square_attacked(board, board.king(color), opposite_color);
+            return legal
+            
+        };
+        board.move_piece(psuedo_legal_move);
+        let legal = !MoveGenerator::is_square_attacked(board, board.king(color), opposite_color);
+        board.undo();
+        return legal
+    }
 }

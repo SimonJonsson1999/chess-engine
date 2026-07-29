@@ -1,30 +1,41 @@
 use crate::piece::Piece;
 use crate::square::Square;
+use crate::board::CastlingRights;
+use crate::piece::MoveKind;
 
-pub struct Move {
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry {
     pub from: Square,
     pub to: Square,
     pub captured_piece: Option<Piece>,
     pub previous_enpassant: Option<Square>,
+    pub previous_castling_rights: CastlingRights,
+    pub move_kind: MoveKind
 }
-impl Move {
+impl LogEntry {
     pub fn new(
         from: Square,
         to: Square,
         captured_piece: Option<Piece>,
         previous_enpassant: Option<Square>,
+        previous_castling_rights: CastlingRights,
+        move_kind: MoveKind,
+
     ) -> Self {
-        Move {
+        LogEntry {
             from,
             to,
             captured_piece,
             previous_enpassant,
+            previous_castling_rights,
+            move_kind
         }
     }
 }
 
 pub struct MoveLog {
-    pub moves: Vec<Move>,
+    pub moves: Vec<LogEntry>,
 }
 
 impl MoveLog {
@@ -32,10 +43,10 @@ impl MoveLog {
         let moves = Vec::new();
         MoveLog { moves }
     }
-    pub fn add(&mut self, move_entry: Move) {
+    pub fn add(&mut self, move_entry: LogEntry) {
         self.moves.push(move_entry);
     }
-    pub fn remove(&mut self) -> Option<Move> {
+    pub fn remove(&mut self) -> Option<LogEntry> {
         self.moves.pop()
     }
     pub fn print_entries(&self) {
