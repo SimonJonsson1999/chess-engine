@@ -1,9 +1,8 @@
 use crate::bitboard::BitBoard;
-use crate::move_gen::MoveGenerator;
 use crate::piece::Color;
 use crate::square::Square;
 use std::ops::Index;
-
+use crate::move_gen::constants::{KNIGHT_DIRECTIONS, KING_DIRECTIONS};
 pub struct AttackTable([BitBoard; 64]);
 
 impl AttackTable {
@@ -19,19 +18,40 @@ impl Index<Square> for AttackTable {
     }
 }
 
-// Structure to hold the 64 bitboards for attacks
-// Needed so we can index using square, removing annoying 'square.index() as usize' everywhere
-// My hope is that this gets optimized away at compile time so no runtime overhead,
-// just improving readability
 
-// Generate a array of 64 bitboards for knight attacks
-// indexed by the square.index()
+const fn knight_attacks_from(square: Square) -> BitBoard {
+        let mut attacks = BitBoard(0);
+
+        // Extrac the rank and file from the square the knight is located on
+        let rank = square.rank() as i8;
+        let file = square.file() as i8;
+
+        // Loop through all directions the knight can jump and calculate new rank and file indexes
+        let mut i = 0;
+        while i < KNIGHT_DIRECTIONS.len() {
+            let (rank_offset, file_offset) = KNIGHT_DIRECTIONS[i];
+
+            let target_rank = rank + rank_offset;
+            let target_file = file + file_offset;
+
+            let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+                // if square outside board, go to next direction
+                i += 1;
+                continue;
+            };
+            attacks.set(target_square);
+
+            i += 1;
+        }
+        attacks
+    }
+
 const fn generate_knight_bitboards() -> AttackTable {
     let mut bitboards = [BitBoard(0); 64];
     let mut i: u8 = 0;
     while i < 64 {
         let square = Square::from_index(i);
-        let knight_attacks: BitBoard = MoveGenerator::knight_attacks_from(square);
+        let knight_attacks: BitBoard = knight_attacks_from(square);
         bitboards[square.index() as usize] = knight_attacks;
         i += 1;
     }
@@ -40,19 +60,44 @@ const fn generate_knight_bitboards() -> AttackTable {
 
 pub const KNIGHT_ATTACKS: AttackTable = generate_knight_bitboards();
 
-// Generate a array of 64 bitboards for king attacks
-// indexed by the square.index()
+const fn king_attacks_from(square: Square) -> BitBoard {
+        let mut attacks = BitBoard(0);
+
+        // Extract the rank and file from the square the king is located on.
+        let rank = square.rank() as i8;
+        let file = square.file() as i8;
+
+        // Loop through all directions the king can move.
+        let mut i = 0;
+        while i < KING_DIRECTIONS.len() {
+            let (rank_offset, file_offset) = KING_DIRECTIONS[i];
+
+            let target_rank = rank + rank_offset;
+            let target_file = file + file_offset;
+
+            let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+                // if square outside board, go to next direction
+                i += 1;
+                continue;
+            };
+            attacks.set(target_square);
+            i += 1;
+        }
+        attacks
+    }
+
 const fn generate_king_bitboards() -> AttackTable {
     let mut bitboards = [BitBoard(0); 64];
     let mut i: u8 = 0;
     while i < 64 {
         let square = Square::from_index(i);
-        let king_attacks: BitBoard = MoveGenerator::king_attacks_from(square);
+        let king_attacks: BitBoard = king_attacks_from(square);
         bitboards[square.index() as usize] = king_attacks;
         i += 1;
     }
     AttackTable::new(bitboards)
 }
+
 pub const KING_ATTACKS: AttackTable = generate_king_bitboards();
 
 const fn generate_pawn_attack_bitboards(color: Color) -> AttackTable {
