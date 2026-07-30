@@ -61,7 +61,7 @@ impl fmt::Display for Color {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Piece {
     pub piece_type: PieceType,
     pub color: Color,
@@ -70,6 +70,25 @@ pub struct Piece {
 impl Piece {
     pub fn new(piece_type: PieceType, color: Color) -> Self {
         Piece { piece_type, color }
+    }
+    pub fn from_fen(ch: char) -> Self {
+        match ch {
+            'P' => Piece::new(PieceType::Pawn, Color::White),
+            'N' => Piece::new(PieceType::Knight, Color::White),
+            'B' => Piece::new(PieceType::Bishop, Color::White),
+            'R' => Piece::new(PieceType::Rook, Color::White),
+            'Q' => Piece::new(PieceType::Queen, Color::White),
+            'K' => Piece::new(PieceType::King, Color::White),
+
+            'p' => Piece::new(PieceType::Pawn, Color::Black),
+            'n' => Piece::new(PieceType::Knight, Color::Black),
+            'b' => Piece::new(PieceType::Bishop, Color::Black),
+            'r' => Piece::new(PieceType::Rook, Color::Black),
+            'q' => Piece::new(PieceType::Queen, Color::Black),
+            'k' => Piece::new(PieceType::King, Color::Black),
+
+            _ => panic!("Invalid FEN piece: {ch}"),
+        }
     }
 }
 impl fmt::Display for Piece {
@@ -94,7 +113,6 @@ impl PieceMove {
         to: Square::A1,
         kind: MoveKind::Quiet,
     };
-
 }
 
 impl fmt::Display for PieceMove {
@@ -109,7 +127,6 @@ pub struct PieceMoveList {
     len: u8,
 }
 impl PieceMoveList {
-
     pub const fn new() -> Self {
         Self {
             moves: [PieceMove::NULL; 256],
@@ -119,8 +136,8 @@ impl PieceMoveList {
 
     pub fn push(&mut self, mv: PieceMove) {
         if (self.len as usize) >= self.moves.len() {
-        panic!("Overflow while pushing {}", mv);
-    }
+            panic!("Overflow while pushing {}", mv);
+        }
         self.moves[self.len as usize] = mv;
         self.len += 1;
     }

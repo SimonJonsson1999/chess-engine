@@ -1,5 +1,5 @@
-use chess_engine::square::Square;
 use chess_engine::game::Game;
+use chess_engine::square::Square;
 fn main() {
     let mut game = Game::new();
 

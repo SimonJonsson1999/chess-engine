@@ -1,0 +1,12 @@
+mod attack_table;
+mod castle;
+pub mod constants;
+mod diagaonal_attacks;
+mod helpers;
+mod king;
+mod knight;
+mod move_gen;
+mod ortogonal_attacks;
+mod pawn;
+pub use constants::BOARDWIDTH;
+pub use move_gen::MoveGenerator;

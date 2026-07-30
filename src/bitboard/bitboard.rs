@@ -139,7 +139,7 @@ impl Shr<u8> for BitBoard {
 }
 
 /// The six bitboards belonging to one color.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ColorBitBoards([BitBoard; 6]);
 
 impl ColorBitBoards {
@@ -169,7 +169,7 @@ impl Default for ColorBitBoards {
 }
 
 /// All twelve piece bitboards.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BitBoards([ColorBitBoards; 2]);
 
 impl BitBoards {

@@ -76,6 +76,26 @@ impl Square {
         debug_assert!(index < 64);
         unsafe { std::mem::transmute(index) }
     }
+    pub fn from_algebraic(s: &str) -> Option<Self> {
+        if s.len() != 2 {
+            return None;
+        }
+
+        let bytes = s.as_bytes();
+
+        let file = match bytes[0] {
+            b'a'..=b'h' => bytes[0] - b'a',
+            _ => return None,
+        };
+
+        let rank = match bytes[1] {
+            b'1'..=b'8' => bytes[1] - b'1',
+            _ => return None,
+        };
+
+        let index = rank * 8 + file;
+        Some(Square::from_index(index))
+    }
     pub const fn from_rank_file(rank: u8, file: u8) -> Self {
         debug_assert!(rank < 8);
         debug_assert!(file < 8);
@@ -134,7 +154,7 @@ impl fmt::Display for Square {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SquareMap<T>([T; 64]);
 
 impl<T: Copy> SquareMap<T> {
