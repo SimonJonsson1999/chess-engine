@@ -1,13 +1,13 @@
 use crate::board::Board;
 use crate::move_gen::MoveGenerator;
 use crate::square::Square;
-pub struct Game {
+pub struct Engine {
     pub board: Board,
 }
 
-impl Game {
+impl Engine {
     pub fn new() -> Self {
-        Game {
+        Engine {
             board: Board::default(),
         }
     }
@@ -28,4 +28,4 @@ impl Game {
     pub fn show(&self) {
         self.board.show();
     }
-} // Impl Game
+} // Impl Engine

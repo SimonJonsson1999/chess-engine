@@ -1,4 +1,4 @@
-// use chess_engine::game::Game;
+// use chess_engine::engine::Engine;
 // use chess_engine::square::Square;
 // fn main() {
 //     let mut game = Game::new();
@@ -21,10 +21,6 @@
 use chess_engine::ui::ChessUI;
 
 fn main() {
-    println!("Starting");
-
-    let ui = ChessUI {};
+    let mut ui = ChessUI::new();
     ui.run();
-
-    println!("Finished");
 }
