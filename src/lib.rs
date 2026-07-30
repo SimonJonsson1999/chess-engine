@@ -5,3 +5,4 @@ pub mod log;
 pub mod move_gen;
 pub mod piece;
 pub mod square;
+pub mod ui;
