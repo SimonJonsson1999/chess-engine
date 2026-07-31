@@ -1,9 +1,11 @@
 use sdl3::EventPump;
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
-use sdl3::pixels::Color;
+use sdl3::pixels::{Color, PixelFormat};
 use sdl3::rect::Rect;
-use sdl3::render::Canvas;
+use sdl3::render::{Canvas};
+use sdl3::Error;
+use sdl3::surface::Surface;
 use sdl3::video::Window;
 use std::time::Duration;
 
@@ -56,7 +58,7 @@ impl ChessUI {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), Error>{
         let (mut canvas, mut events) = self.init();
         'running: loop {
             for event in events.poll_iter() {
@@ -85,11 +87,12 @@ impl ChessUI {
             canvas.clear();
 
             // Draw everything
-            self.draw_board(&mut canvas);
+            self.draw_board(&mut canvas)?;
             // draw_pieces(&mut canvas);
             canvas.present();
             std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
+        Ok(())
     }
 
     pub fn get_board_rect(&self) -> Rect {
@@ -116,7 +119,8 @@ impl ChessUI {
         (canvas, events)
     }
 
-    pub fn draw_board(&mut self, canvas: &mut Canvas<Window>) {
+    pub fn draw_board(&mut self, canvas: &mut Canvas<Window>)  -> Result<(), Error> 
+   {
         let min_side = min(self.window_size.0, self.window_size.1);
         let tile_size = min_side / 8;
         let board_rect = self.get_board_rect();
@@ -133,8 +137,9 @@ impl ChessUI {
                     canvas.set_draw_color(Color::RGB(181, 136, 99)); // dark
                 }
 
-                canvas.fill_rect(square);
+                canvas.fill_rect(square)?;
             }
         }
+        Ok(())
     }
 }

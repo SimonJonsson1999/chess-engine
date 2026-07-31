@@ -20,5 +20,5 @@ use chess_engine::ui::ChessUI;
 
 fn main() {
     let mut ui = ChessUI::new();
-    ui.run();
+    ui.run().expect("Error when running UI");
 }

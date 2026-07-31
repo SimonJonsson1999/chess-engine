@@ -20,5 +20,5 @@ fn main() {
         sdl.join("lib").join("x64").join("SDL3.dll"),
         target_dir.join("SDL3.dll"),
     )
-    .unwrap();
+    .expect("Error when copying sdl linker files");
 }
