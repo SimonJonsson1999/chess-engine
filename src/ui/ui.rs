@@ -9,6 +9,29 @@ use sdl3::render::Canvas;
 use std::cmp::min;
 use crate::engine::Engine;
 use crate::move_gen::BOARDWIDTH;
+
+
+// TODO
+
+// -- Set icon
+// pub fn set_icon<S: AsRef<SurfaceRef>>(&mut self, icon: S) -> bool
+// Use this function to set the icon for a window.
+
+// Example:
+// ⓘ
+// // requires "--features 'image'"
+// use sdl3::surface::Surface;
+
+// let window_icon = Surface::from_file("/path/to/icon.png")?;
+// window.set_icon(window_icon);
+
+
+// -- Use Viewports
+// A viewport is a rectangular region of the canvas with its own local coordinate system.
+// Set a viewport, draw using coordinates relative to it, then switch to another viewport.
+// Drawing is clipped to the viewport. Only one viewport is active at a time.
+
+
 pub struct ChessUI {
     engine: Engine,
     // window_size.0 is width, window_size.1 is height
@@ -19,7 +42,7 @@ impl ChessUI {
     pub fn new() -> Self {
         ChessUI{
             engine: Engine::new(),
-            window_size: (800, 600)
+            window_size: (800, 800)
         }
     }
 
