@@ -16,8 +16,6 @@
 //     game.show();
 // }
 
-
-
 use chess_engine::ui::ChessUI;
 
 fn main() {

@@ -14,10 +14,7 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
     // From OUT_DIR navigate back to target/debug
-    let target_dir = Path::new(&out_dir)
-        .ancestors()
-        .nth(3)
-        .unwrap();
+    let target_dir = Path::new(&out_dir).ancestors().nth(3).unwrap();
 
     fs::copy(
         sdl.join("lib").join("x64").join("SDL3.dll"),

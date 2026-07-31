@@ -1,8 +1,8 @@
 use crate::bitboard::BitBoard;
+use crate::move_gen::constants::{KING_DIRECTIONS, KNIGHT_DIRECTIONS};
 use crate::piece::Color;
 use crate::square::Square;
 use std::ops::Index;
-use crate::move_gen::constants::{KNIGHT_DIRECTIONS, KING_DIRECTIONS};
 pub struct AttackTable([BitBoard; 64]);
 
 impl AttackTable {
@@ -18,33 +18,32 @@ impl Index<Square> for AttackTable {
     }
 }
 
-
 const fn knight_attacks_from(square: Square) -> BitBoard {
-        let mut attacks = BitBoard(0);
+    let mut attacks = BitBoard(0);
 
-        // Extrac the rank and file from the square the knight is located on
-        let rank = square.rank() as i8;
-        let file = square.file() as i8;
+    // Extrac the rank and file from the square the knight is located on
+    let rank = square.rank() as i8;
+    let file = square.file() as i8;
 
-        // Loop through all directions the knight can jump and calculate new rank and file indexes
-        let mut i = 0;
-        while i < KNIGHT_DIRECTIONS.len() {
-            let (rank_offset, file_offset) = KNIGHT_DIRECTIONS[i];
+    // Loop through all directions the knight can jump and calculate new rank and file indexes
+    let mut i = 0;
+    while i < KNIGHT_DIRECTIONS.len() {
+        let (rank_offset, file_offset) = KNIGHT_DIRECTIONS[i];
 
-            let target_rank = rank + rank_offset;
-            let target_file = file + file_offset;
+        let target_rank = rank + rank_offset;
+        let target_file = file + file_offset;
 
-            let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
-                // if square outside board, go to next direction
-                i += 1;
-                continue;
-            };
-            attacks.set(target_square);
-
+        let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+            // if square outside board, go to next direction
             i += 1;
-        }
-        attacks
+            continue;
+        };
+        attacks.set(target_square);
+
+        i += 1;
     }
+    attacks
+}
 
 const fn generate_knight_bitboards() -> AttackTable {
     let mut bitboards = [BitBoard(0); 64];
@@ -61,30 +60,30 @@ const fn generate_knight_bitboards() -> AttackTable {
 pub const KNIGHT_ATTACKS: AttackTable = generate_knight_bitboards();
 
 const fn king_attacks_from(square: Square) -> BitBoard {
-        let mut attacks = BitBoard(0);
+    let mut attacks = BitBoard(0);
 
-        // Extract the rank and file from the square the king is located on.
-        let rank = square.rank() as i8;
-        let file = square.file() as i8;
+    // Extract the rank and file from the square the king is located on.
+    let rank = square.rank() as i8;
+    let file = square.file() as i8;
 
-        // Loop through all directions the king can move.
-        let mut i = 0;
-        while i < KING_DIRECTIONS.len() {
-            let (rank_offset, file_offset) = KING_DIRECTIONS[i];
+    // Loop through all directions the king can move.
+    let mut i = 0;
+    while i < KING_DIRECTIONS.len() {
+        let (rank_offset, file_offset) = KING_DIRECTIONS[i];
 
-            let target_rank = rank + rank_offset;
-            let target_file = file + file_offset;
+        let target_rank = rank + rank_offset;
+        let target_file = file + file_offset;
 
-            let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
-                // if square outside board, go to next direction
-                i += 1;
-                continue;
-            };
-            attacks.set(target_square);
+        let Some(target_square) = Square::try_from_rank_file(target_rank, target_file) else {
+            // if square outside board, go to next direction
             i += 1;
-        }
-        attacks
+            continue;
+        };
+        attacks.set(target_square);
+        i += 1;
     }
+    attacks
+}
 
 const fn generate_king_bitboards() -> AttackTable {
     let mut bitboards = [BitBoard(0); 64];
