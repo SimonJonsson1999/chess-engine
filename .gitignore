@@ -1,10 +1,22 @@
 /target
-# Ignore everything in the SDL SDK
-SDL3-3.4.12/**
 
-# Re-include the files we need
+# SDL3
+SDL3-3.4.12/**
 !SDL3-3.4.12/lib/
 !SDL3-3.4.12/lib/x64/
 !SDL3-3.4.12/lib/x64/SDL3.dll
 !SDL3-3.4.12/lib/x64/SDL3.lib
 
+# SDL3_image
+SDL3_image-3.4.4/**
+!SDL3_image-3.4.4/lib/
+!SDL3_image-3.4.4/lib/x64/
+!SDL3_image-3.4.4/lib/x64/SDL3_image.dll
+!SDL3_image-3.4.4/lib/x64/SDL3_image.lib
+
+# SDL3_ttf
+SDL3_ttf-3.4.2/**
+!SDL3_ttf-3.4.2/lib/
+!SDL3_ttf-3.4.2/lib/x64/
+!SDL3_ttf-3.4.2/lib/x64/SDL3_ttf.dll
+!SDL3_ttf-3.4.2/lib/x64/SDL3_ttf.lib
