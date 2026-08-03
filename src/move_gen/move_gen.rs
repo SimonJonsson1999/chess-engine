@@ -23,6 +23,18 @@ impl MoveGenerator {
         MoveGenerator::generate_castling(&mut possible_moves, board, color);
         possible_moves
     }
+    
+    pub fn generate_valid_moves_from(
+        board: &mut Board,
+        from: Square,
+    ) -> PieceMoveList{
+        let moves_from_sq = MoveGenerator::generate_valid_moves(board)
+                                        .iter()
+                                        .copied()
+                                        .filter(|mv| mv.from == from)
+                                        .collect();
+        moves_from_sq
+    }
 
     pub fn legal_move(psuedo_legal_move: PieceMove, board: &mut Board, color: Color) -> bool {
         let opposite_color = match color {

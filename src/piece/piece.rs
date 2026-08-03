@@ -156,7 +156,17 @@ impl PieceMoveList {
         self.moves[..self.len as usize].iter()
     }
 } // impl PieceMoveList
+impl IntoIterator for PieceMoveList {
+    type Item = PieceMove;
+    type IntoIter = PieceMoveIter;
 
+    fn into_iter(self) -> Self::IntoIter {
+        PieceMoveIter {
+            moves: self,
+            index: 0,
+        }
+    }
+}
 impl FromIterator<PieceMove> for PieceMoveList {
     fn from_iter<T: IntoIterator<Item = PieceMove>>(iter: T) -> Self {
         let mut list = PieceMoveList::new();
@@ -168,6 +178,24 @@ impl FromIterator<PieceMove> for PieceMoveList {
         list
     }
 }
+pub struct PieceMoveIter {
+    moves: PieceMoveList,
+    index: u8,
+}
+impl Iterator for PieceMoveIter {
+    type Item = PieceMove;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.moves.len {
+            return None;
+        }
+
+        let mv = self.moves.moves[self.index as usize];
+        self.index += 1;
+        Some(mv)
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MoveKind {

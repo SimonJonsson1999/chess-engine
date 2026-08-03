@@ -3,7 +3,7 @@ use crate::move_gen::MoveGenerator;
 use crate::piece::{Color, MoveKind, PieceMove, PieceMoveList};
 use crate::square::Square;
 impl MoveGenerator {
-    pub fn generate_castling(moves: &mut PieceMoveList, board: &Board, color: Color) {
+    pub(crate) fn generate_castling(moves: &mut PieceMoveList, board: &Board, color: Color) {
         match color {
             Color::White => {
                 if board.castling_rights.white_kingside

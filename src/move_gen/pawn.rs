@@ -15,7 +15,7 @@ impl MoveGenerator {
     }
 
     #[inline]
-    fn pawn_step(pawns: BitBoard, color: Color, offset: u8) -> BitBoard {
+    pub(crate) fn pawn_step(pawns: BitBoard, color: Color, offset: u8) -> BitBoard {
         match color {
             Color::White => pawns << offset,
             Color::Black => pawns >> offset,
@@ -23,7 +23,7 @@ impl MoveGenerator {
     }
 
     #[inline]
-    fn push_pawn_moves(
+    pub(crate) fn push_pawn_moves(
         moves: &mut PieceMoveList,
         destinations: BitBoard,
         color: Color,
