@@ -20,5 +20,7 @@ impl<S: Searcher> Computer<S> {
 impl<S: Searcher> AI for Computer<S> {
     fn choose_move(&mut self, board: &mut Board) -> PieceMove {
         self.searcher.best_move(board, self.depth)
+        
+
     }
 }

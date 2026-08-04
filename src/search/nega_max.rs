@@ -4,7 +4,7 @@ use crate::board::{Board};
 use crate::evaluation::Evaluator;
 use crate::search::Searcher;
 use crate::board::GameState;
-
+use rand::random;
 const CHECKMATE_SCORE: i32 = 30_000;
 pub struct NegaMaxAlphaBetaSearcher<E: Evaluator> {
     evaluator: E,
@@ -15,8 +15,9 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
     }  
     pub fn negamax_alpha_beta(&self, board: &mut Board, depth: u8, mut alpha: i32, beta: i32) -> i32 {
         match board.game_state() {
-            GameState::Checkmate => return -CHECKMATE_SCORE,
-            GameState::Stalemate => return 0,
+            GameState::Checkmate => return -CHECKMATE_SCORE + depth as i32,
+            GameState::Stalemate => return -20,
+            GameState::FiftyMoveRule => return -20,
             _ => {}
         }
         if depth == 0 {
@@ -71,9 +72,13 @@ impl<E: Evaluator> Searcher for NegaMaxAlphaBetaSearcher<E> {
             if score > best_score {
                 best_score = score;
                 best_move = Some(mv);
+            } else if score == best_score && random::<bool>() {
+                best_move = Some(mv);
+                best_score = score;
             }
+                        // println!("{:?} -> {}", mv, score);
         }
-
+        println!("{:?} -> {}", best_move, best_score);
         best_move.expect("No legal moves")
     }
 }

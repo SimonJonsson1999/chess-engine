@@ -78,32 +78,36 @@ impl ChessUI {
         let images = Assets::new(&texture_creator)?;
 
         'running: loop {
-            // Handle all pending events
-            for event in events.poll_iter() {
-                if !self.handle_event(event) {
-                    break 'running;
-                }
-            }
-            self.engine.update();
-            if self.engine.is_game_over() {
-                match self.engine.game_state {
-                    GameState::Checkmate => {
-                        let winner = self.engine.turn().opposite();
-
-                        println!("Game over! {:?} wins!", winner);
-                    }
-                    GameState::Stalemate => {
-                        println!("Game over! Draw.");
-                    }
-                    _ => {}
-                }
+        // Handle all pending events
+        for event in events.poll_iter() {
+            if !self.handle_event(event) {
                 break 'running;
             }
-            
-            self.draw(&mut canvas, &images)?;
-            std::thread::sleep(Duration::from_millis(16));
         }
-        Ok(())
+
+        if !self.engine.is_game_over() {
+            self.engine.update();
+
+            if self.engine.is_game_over() {
+                match self.engine.game_state {
+                    GameState::Checkmate |
+                    GameState::Stalemate |
+                    GameState::FiftyMoveRule => {
+                        println!("Turn: {:?}", self.engine.turn());
+                        println!("Game state: {:?}", self.engine.game_state);
+                        println!("Winner: {:?}", self.engine.turn().opposite());
+                    }
+
+                    _ => {}
+                }
+            }
+        }
+
+        self.draw(&mut canvas, &images)?;
+        std::thread::sleep(Duration::from_millis(16));
+    }
+
+    Ok(())
     }
 
     pub fn init_sdl(&self) -> (Canvas<Window>, EventPump) {

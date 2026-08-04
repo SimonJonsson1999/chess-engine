@@ -14,6 +14,7 @@ pub enum GameState {
     Check,
     Checkmate,
     Stalemate,
+    FiftyMoveRule,
 }
 #[derive(PartialEq, Eq, Debug)]
 pub struct Board {
@@ -69,6 +70,10 @@ impl Board {
     }
 
     pub fn game_state(&mut self) -> GameState {
+        if self.half_move >= 100 {
+            return GameState::FiftyMoveRule;
+        }
+
         let in_check = self.is_in_check(self.turn);
         let has_moves = self.has_legal_moves();
 

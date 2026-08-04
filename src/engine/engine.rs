@@ -1,3 +1,5 @@
+use std::println;
+
 use crate::bitboard::BitBoard;
 use crate::board::Board;
 use crate::move_gen::MoveGenerator;
@@ -36,6 +38,7 @@ impl Engine {
         PlayerType::Human => {}
         PlayerType::AI(ai) => {
             let mv = ai.choose_move(&mut self.board);
+            
             self.board.move_piece(mv);
             self.update_game_state();
         }
@@ -60,7 +63,7 @@ impl Engine {
     }
     pub fn is_game_over(&self) -> bool {
         match self.game_state {
-            GameState::Checkmate | GameState::Stalemate => true,
+            GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule => true,
             _ => false,
         }
     }

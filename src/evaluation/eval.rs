@@ -89,11 +89,21 @@ impl BoardEvaluation {
         sum
 
     }
+
+    fn tempo(board: &Board) -> i32 {
+        let mut score = 0;
+        match board.turn {
+                Color::White => score = 10,
+                Color::Black => score = 10,
+        }
+        score
+    }
 }
 impl Evaluator for BoardEvaluation {
     fn evaluate(&self, board: &Board) -> i32 {
         Self::material(board)
-            + Self::piece_positions(board)
+            + Self::piece_positions(board) 
+            + Self::tempo(board)
     }
 }
 #[cfg(test)]
