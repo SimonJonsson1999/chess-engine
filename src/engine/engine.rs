@@ -2,31 +2,44 @@ use crate::bitboard::BitBoard;
 use crate::board::Board;
 use crate::move_gen::MoveGenerator;
 use crate::square::Square;
-use crate::search::Search;
 use crate::piece::Color;
 use crate::board::GameState;
+use crate::player::PlayerType;
+
 pub struct Engine {
     pub board: Board,
     pub game_state: GameState,
-    pub ai_color: Option<Color>
+    pub white_player: PlayerType,
+    pub black_player: PlayerType,
 }
 
 impl Engine {
-    pub fn new(ai_color: Option<Color>) -> Self {
+    pub fn new(white_player: PlayerType, black_player: PlayerType) -> Self {
         Self {
-                board: Board::default(),
-                game_state: GameState::Ongoing,
-                ai_color,
-            }
+            white_player,
+            black_player,
+            ..Self::default()
         }
+    }
+
     pub fn update(&mut self) {
         if self.is_game_over() {
             return;
         }
 
-        if self.ai_color == Some(self.turn()) {
-            self.make_best_move();
+        let current_player = match self.turn() {
+            Color::White => &mut self.white_player,
+            Color::Black => &mut self.black_player,
+        };
+
+        match current_player {
+        PlayerType::Human => {}
+        PlayerType::AI(ai) => {
+            let mv = ai.choose_move(&mut self.board);
+            self.board.move_piece(mv);
+            self.update_game_state();
         }
+}
     }
 
     pub fn make_move(&mut self, from: Square, to: Square) -> bool{
@@ -70,13 +83,19 @@ impl Engine {
         self.board.turn
     }
 
-    pub fn make_best_move(&mut self) {
-        let best_move = Search::best_move(&mut self.board, 4);
-        self.board.move_piece(best_move);
-        self.update_game_state();
-    }
     fn update_game_state(&mut self) {
         self.game_state = self.board.game_state();
     }
 
 } // Impl Engine
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self {
+            board: Board::default(),
+            game_state: GameState::Ongoing,
+            white_player: PlayerType::Human,
+            black_player: PlayerType::Human,
+        }
+    }
+}

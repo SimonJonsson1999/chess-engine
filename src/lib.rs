@@ -8,3 +8,4 @@ pub mod square;
 pub mod ui;
 pub mod evaluation;
 pub mod search;
+pub mod player;

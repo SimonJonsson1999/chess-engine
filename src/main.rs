@@ -1,27 +1,25 @@
-// use chess_engine::engine::Engine;
-// use chess_engine::square::Square;
-// fn main() {
-//     let mut game = Game::new();
-
-//     game.make_move(Square::E2, Square::E4);
-//     game.make_move(Square::D7, Square::D5);
-//     game.make_move(Square::H2, Square::H4);
-//     game.make_move(Square::G7, Square::G5);
-//     game.make_move(Square::H4, Square::G5);
-//     game.make_move(Square::A7, Square::A5);
-//     game.make_move(Square::G5, Square::G6);
-//     game.make_move(Square::H7, Square::H6);
-//     game.make_move(Square::H1, Square::H5);
-
-//     game.show();
-// }
-
+use chess_engine::engine::Engine;
+use chess_engine::evaluation::BoardEvaluation;
+use chess_engine::player::{PlayerType, Computer};
+use chess_engine::search::NegaMaxAlphaBetaSearcher;
 use chess_engine::ui::ChessUI;
-use chess_engine::piece::Color;
+
 fn main() {
-    let mut chess_game = ChessUI::with_ai(Color::Black);
-    match chess_game.run() {
-        Ok(()) => {}
-        Err(e) => eprintln!("Error running UI: {e}"),
+    let evaluator = BoardEvaluation{};
+    let searcher = NegaMaxAlphaBetaSearcher::new(evaluator);
+    let white = PlayerType::Human;
+    let black = PlayerType::AI(Box::new(
+        Computer::new(
+            searcher,
+            4,
+        ),
+    ));
+
+    let engine = Engine::new(white, black);
+
+    let mut chess_game = ChessUI::new(engine);
+
+    if let Err(e) = chess_game.run() {
+        eprintln!("Error running UI: {e}");
     }
 }

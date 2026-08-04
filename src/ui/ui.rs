@@ -9,9 +9,6 @@ use crate::bitboard::BitBoard;
 use crate::engine::Engine;
 use crate::ui::assets::Assets;
 use crate::square::Square;
-
-// These should not exist inside UI
-use crate::piece::Color;
 use crate::board::GameState;
 
 
@@ -66,17 +63,9 @@ pub struct ChessUI {
 }
 
 impl ChessUI {
-    pub fn new() -> Self {
+    pub fn new(engine: Engine) -> Self {
         Self {
-            engine: Engine::new(None),
-            window_size: (800, 800),
-            selected_square: None,
-            legal_destinations: BitBoard(0),
-        }
-    }
-    pub fn with_ai(ai_color: Color) -> Self {
-        Self {
-            engine: Engine::new(Some(ai_color)),
+            engine: engine,
             window_size: (800, 800),
             selected_square: None,
             legal_destinations: BitBoard(0),

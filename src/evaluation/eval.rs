@@ -20,14 +20,11 @@ pub struct BoardEvaluation;
 //     0,   // King
 // ];
 
-
+pub trait Evaluator {
+    fn evaluate(&self, board: &Board) -> i32;
+}
 impl BoardEvaluation {
-    pub fn evaluate(board: &Board) -> i32 {
-        // Later other functions such as piece positioning etc can be added
-        Self::material(board) + 
-        Self::piece_positions(board)
-    }
-
+    
     fn material(board: &Board) -> i32 {
         let mut sum: i32 = 0;
         
@@ -93,14 +90,19 @@ impl BoardEvaluation {
 
     }
 }
-
+impl Evaluator for BoardEvaluation {
+    fn evaluate(&self, board: &Board) -> i32 {
+        Self::material(board)
+            + Self::piece_positions(board)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_eval_start_position() {
         let board = Board::default();
-
-        assert_eq!(BoardEvaluation::evaluate(&board), 0);
+        let evaluator = BoardEvaluation{};
+        assert_eq!(evaluator.evaluate(&board), 0);
     }
 }
