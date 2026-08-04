@@ -155,4 +155,38 @@ impl Search {
             }
         }
     }
+
+    pub fn negamax_alpha_beta(board: &mut Board, depth: u8, mut alpha: i32, mut beta: i32) -> i32 {
+        match board.game_state() {
+            GameState::Checkmate => return -CHECKMATE_SCORE,
+            GameState::Stalemate => return 0,
+            _ => {}
+        }
+        if depth == 0 {
+            return match board.turn {
+                Color::White => BoardEvaluation::evaluate(board),
+                Color::Black => -BoardEvaluation::evaluate(board),
+            };
+        }
+        
+        let moves = MoveGenerator::generate_valid_moves(board);
+        let mut best = i32::MIN;
+
+        for mv in moves {
+            board.move_piece(mv);
+
+            let score = -Self::negamax_alpha_beta(board, depth - 1, -beta, -alpha);
+
+            board.undo();
+            best = best.max(score);
+            alpha = alpha.max(score);
+
+            if alpha >= beta {
+                break;
+            }
+            
+        }
+
+        best
+    }       
 }
