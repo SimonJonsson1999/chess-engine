@@ -37,7 +37,7 @@ impl Search {
         best_move.expect("No legal moves")
     }
 
-
+    // Algortihm found here https://en.wikipedia.org/wiki/Minimax
     fn minimax(board: &mut Board, depth: u8) -> i32 {
         if depth == 0 {
             return BoardEvaluation::evaluate(board);
