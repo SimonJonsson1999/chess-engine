@@ -19,8 +19,8 @@ impl Search {
         for mv in moves {
             board.move_piece(mv);
 
-            let score = Self::minimax(board, depth-1);
-
+            // let score = Self::minimax(board, depth-1);
+            let score = Self::minimax_alpha_beta(board, depth-1, i32::MIN, i32::MAX);
             board.undo();
 
             let better = match turn {
@@ -33,7 +33,6 @@ impl Search {
                 best_move = Some(mv);
             }
         }
-
         best_move.expect("No legal moves")
     }
 
@@ -42,9 +41,6 @@ impl Search {
         if depth == 0 {
             return BoardEvaluation::evaluate(board);
         }
-
-        let moves = MoveGenerator::generate_valid_moves(board);
-
         match board.game_state() {
             GameState::Checkmate => {
                 match board.turn {
@@ -60,6 +56,7 @@ impl Search {
             _ => {}
         }
 
+        let moves = MoveGenerator::generate_valid_moves(board);
         match board.turn {
             Color::White => {
                 let mut best = i32::MIN;
@@ -87,6 +84,70 @@ impl Search {
 
                     board.undo();
 
+                    best = best.min(score);
+                }
+
+                best
+            }
+        }
+    }
+    // https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
+    pub fn minimax_alpha_beta(board: &mut Board, depth: u8, mut alpha: i32, mut beta: i32) -> i32 {
+        if depth == 0 {
+            return BoardEvaluation::evaluate(board);
+        }
+
+        
+
+        match board.game_state() {
+            GameState::Checkmate => {
+                match board.turn {
+                    Color::White => {
+                        return -CHECKMATE_SCORE
+                    },
+                    Color::Black => {
+                        return CHECKMATE_SCORE
+                    }
+                }
+            },
+            GameState::Stalemate => return 0,
+            _ => {}
+        }
+        let moves = MoveGenerator::generate_valid_moves(board);
+        match board.turn {
+            Color::White => {
+                let mut best = i32::MIN;
+
+                for mv in moves {
+                    board.move_piece(mv);
+
+                    let score = Self::minimax_alpha_beta(board, depth - 1, alpha, beta);
+
+                    board.undo();
+                    
+                    if score >= beta {
+                        return beta
+                    }
+                    alpha = alpha.max(score);
+                    best = best.max(score);
+                }
+
+                best
+            }
+
+            Color::Black => {
+                let mut best = i32::MAX;
+
+                for mv in moves {
+                    board.move_piece(mv);
+
+                    let score = Self::minimax_alpha_beta(board, depth - 1, alpha, beta);
+
+                    board.undo();
+                    if score <= alpha {
+                        return alpha
+                    }
+                    beta = beta.min(score);
                     best = best.min(score);
                 }
 

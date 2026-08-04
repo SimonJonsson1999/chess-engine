@@ -53,7 +53,7 @@ impl Engine {
     }
 
     pub fn make_best_move(&mut self) {
-        let best_move = Search::best_move(&mut self.board, 3);
+        let best_move = Search::best_move(&mut self.board, 4);
         self.board.move_piece(best_move);
         self.update_game_state();
     }

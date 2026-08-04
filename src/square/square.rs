@@ -103,6 +103,9 @@ impl Square {
         let index = rank * 8 + file;
         Square::from_index(index)
     }
+    pub const fn flip(self) -> Self {
+        Self::from_index((self as u8) ^ 56)
+    }
     pub const fn try_from_rank_file(rank: i8, file: i8) -> Option<Self> {
         if rank < 0 || rank >= 8 || file < 0 || file >= 8 {
             None
