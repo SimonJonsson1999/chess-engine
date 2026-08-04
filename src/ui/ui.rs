@@ -67,8 +67,16 @@ pub struct ChessUI {
 
 impl ChessUI {
     pub fn new() -> Self {
-        ChessUI {
-            engine: Engine::new(),
+        Self {
+            engine: Engine::new(None),
+            window_size: (800, 800),
+            selected_square: None,
+            legal_destinations: BitBoard(0),
+        }
+    }
+    pub fn with_ai(ai_color: Color) -> Self {
+        Self {
+            engine: Engine::new(Some(ai_color)),
             window_size: (800, 800),
             selected_square: None,
             legal_destinations: BitBoard(0),
@@ -87,8 +95,6 @@ impl ChessUI {
                     break 'running;
                 }
             }
-            // Re-think how this should be handled
-            // This should not be handeled by the UI, but rather in main or engine
             self.engine.update();
             if self.engine.is_game_over() {
                 match self.engine.game_state {

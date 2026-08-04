@@ -17,10 +17,10 @@
 // }
 
 use chess_engine::ui::ChessUI;
-
+use chess_engine::piece::Color;
 fn main() {
-    let mut ui = ChessUI::new();
-    match ui.run() {
+    let mut chess_game = ChessUI::with_ai(Color::Black);
+    match chess_game.run() {
         Ok(()) => {}
         Err(e) => eprintln!("Error running UI: {e}"),
     }

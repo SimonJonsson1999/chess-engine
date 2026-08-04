@@ -8,21 +8,23 @@ use crate::board::GameState;
 pub struct Engine {
     pub board: Board,
     pub game_state: GameState,
+    pub ai_color: Option<Color>
 }
 
 impl Engine {
-    pub fn new() -> Self {
-        Engine {
-            board: Board::default(),
-            game_state: GameState::Ongoing,
+    pub fn new(ai_color: Option<Color>) -> Self {
+        Self {
+                board: Board::default(),
+                game_state: GameState::Ongoing,
+                ai_color,
+            }
         }
-    }
     pub fn update(&mut self) {
         if self.is_game_over() {
             return;
         }
 
-        if self.turn() == Color::Black {
+        if self.ai_color == Some(self.turn()) {
             self.make_best_move();
         }
     }
