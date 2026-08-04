@@ -1,11 +1,12 @@
 use crate::evaluation::BoardEvaluation;
 use crate::move_gen::MoveGenerator;
 use crate::piece::{Color, PieceMove};
-use crate::board::Board;
+use crate::board::{Board, GameState};
 pub struct Search;
-
+const CHECKMATE_SCORE: i32 = 30_000;
 impl Search {
-    pub fn best_move(board: &mut Board) -> PieceMove {
+    pub fn best_move(board: &mut Board, depth: u8) -> PieceMove {
+        debug_assert!(depth > 0);
         let turn = board.turn;
         let mut best_move = None;
         let mut best_score = match turn {
@@ -18,7 +19,7 @@ impl Search {
         for mv in moves {
             board.move_piece(mv);
 
-            let score = BoardEvaluation::evaluate(board);
+            let score = Self::minimax(board, depth-1);
 
             board.undo();
 
@@ -37,4 +38,60 @@ impl Search {
     }
 
 
+    fn minimax(board: &mut Board, depth: u8) -> i32 {
+        if depth == 0 {
+            return BoardEvaluation::evaluate(board);
+        }
+
+        let moves = MoveGenerator::generate_valid_moves(board);
+
+        match board.game_state() {
+            GameState::Checkmate => {
+                match board.turn {
+                    Color::White => {
+                        return -CHECKMATE_SCORE
+                    },
+                    Color::Black => {
+                        return CHECKMATE_SCORE
+                    }
+                }
+            },
+            GameState::Stalemate => return 0,
+            _ => {}
+        }
+
+        match board.turn {
+            Color::White => {
+                let mut best = i32::MIN;
+
+                for mv in moves {
+                    board.move_piece(mv);
+
+                    let score = Self::minimax(board, depth - 1);
+
+                    board.undo();
+
+                    best = best.max(score);
+                }
+
+                best
+            }
+
+            Color::Black => {
+                let mut best = i32::MAX;
+
+                for mv in moves {
+                    board.move_piece(mv);
+
+                    let score = Self::minimax(board, depth - 1);
+
+                    board.undo();
+
+                    best = best.min(score);
+                }
+
+                best
+            }
+        }
+    }
 }
