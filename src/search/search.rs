@@ -20,7 +20,7 @@ impl Search {
             board.move_piece(mv);
 
             // let score = Self::minimax(board, depth-1);
-            let score = Self::minimax_alpha_beta(board, depth-1, i32::MIN, i32::MAX);
+            let score = Self::negamax_alpha_beta(board, depth-1, i32::MIN, i32::MAX);
             board.undo();
 
             let better = match turn {
