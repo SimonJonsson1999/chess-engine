@@ -6,3 +6,5 @@ pub mod move_gen;
 pub mod piece;
 pub mod square;
 pub mod ui;
+pub mod evaluation;
+pub mod search;

@@ -35,6 +35,9 @@ impl BitBoard {
     pub const fn is_non_empty(&self) -> bool {
         self.0 != 0
     }
+    pub fn count(self) -> u32 {
+        self.0.count_ones()
+    }
     pub fn squares(&self) -> Vec<Square> {
         let mut squares = Vec::new();
         let mut bb = self.0;

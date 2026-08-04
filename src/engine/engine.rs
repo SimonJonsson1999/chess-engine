@@ -2,14 +2,19 @@ use crate::bitboard::BitBoard;
 use crate::board::Board;
 use crate::move_gen::MoveGenerator;
 use crate::square::Square;
+use crate::search::Search;
+use crate::piece::Color;
+use crate::board::GameState;
 pub struct Engine {
     pub board: Board,
+    pub game_state: GameState,
 }
 
 impl Engine {
     pub fn new() -> Self {
         Engine {
             board: Board::default(),
+            game_state: GameState::Ongoing,
         }
     }
 
@@ -19,6 +24,7 @@ impl Engine {
         match next_move {
             Some(next_move) => {
                 self.board.move_piece(*next_move);
+                self.update_game_state();
                 return true
             }
             None => {
@@ -26,6 +32,7 @@ impl Engine {
                 return false
             }
         }
+        
     }
     pub fn show(&self) {
         self.board.show();
@@ -40,5 +47,17 @@ impl Engine {
                                                                     });
         let moves_from_sq = attacked.squares();
         moves_from_sq
+    }
+    pub fn turn(&self) -> Color {
+        self.board.turn
+    }
+
+    pub fn make_best_move(&mut self) {
+        let best_move = Search::best_move(&mut self.board);
+        self.board.move_piece(best_move);
+        self.update_game_state();
+    }
+    fn update_game_state(&mut self) {
+        self.game_state = self.board.game_state();
     }
 } // Impl Engine

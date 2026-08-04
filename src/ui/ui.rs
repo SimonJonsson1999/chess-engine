@@ -3,11 +3,16 @@ use sdl3::EventPump;
 use sdl3::render::{Canvas};
 use sdl3::Error;
 use sdl3::video::Window;
+use std::println;
 use std::time::Duration;
 use crate::bitboard::BitBoard;
 use crate::engine::Engine;
 use crate::ui::assets::Assets;
 use crate::square::Square;
+
+// These should not exist inside UI
+use crate::piece::Color;
+use crate::board::GameState;
 
 
 
@@ -19,7 +24,6 @@ use crate::square::Square;
 // Use this function to set the icon for a window.
 
 // Example:
-// ⓘ
 // // requires "--features 'image'"
 // use sdl3::surface::Surface;
 
@@ -48,6 +52,9 @@ use crate::square::Square;
 
 // Simplify the highlighted square and selected piece. Could probably use the selected
 // piece for changing the colkor of the square
+
+
+// Implement drag and drop of pieces instead of just clicking
 
 pub struct ChessUI {
     pub(crate) engine: Engine,
@@ -80,14 +87,31 @@ impl ChessUI {
                     break 'running;
                 }
             }
-
-
-            self.draw(&mut canvas, &images)?;
+            // Re-think how this should be handled
+            // This should not be handeled by the UI, but rather in main or engine
+            if self.engine.game_state == GameState::Checkmate || self.engine.game_state == GameState::Stalemate {
+                let color = match self.engine.turn().opposite() {
+                    Color::White => "White",
+                    Color::Black => "Black",
+                };
+                match self.engine.game_state {
+                    GameState::Checkmate => {
+                        println!("Game over, {color} wins")
+                    }
+                    GameState::Stalemate => {
+                        println!("Game over, Draw")
+                    }
+                    _ => {}
+                }
+                break 'running;
+            }
+            if self.engine.turn() == Color::Black {
+                self.engine.make_best_move();
+            }
             
-
+            self.draw(&mut canvas, &images)?;
             std::thread::sleep(Duration::from_millis(16));
         }
-
         Ok(())
     }
 

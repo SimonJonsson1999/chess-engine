@@ -1,12 +1,20 @@
 use crate::bitboard::{BitBoard, BitBoards};
 use crate::board::CastlingRights;
 use crate::log::MoveLog;
+use crate::move_gen::MoveGenerator;
 use crate::piece::{Color, Piece, PieceType};
 use crate::square::{Square, SquareMap};
 const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 // All pieces are represented using 6*2 bitboards, for the 6 different pieces
 // for both colors
 // Each bitboard is 64 bits, where each bit will represent if the piece is present or not
+#[derive(PartialEq, Eq, Debug)]
+pub enum GameState {
+    Ongoing,
+    Check,
+    Checkmate,
+    Stalemate,
+}
 #[derive(PartialEq, Eq, Debug)]
 pub struct Board {
     pub bitboards: BitBoards,
@@ -36,6 +44,7 @@ impl Board {
             turn: Color::White,
             half_move: 0,
             full_move: 0,
+
         }
     }
 
@@ -52,6 +61,24 @@ impl Board {
             Color::Black => self.turn = Color::White,
         }
     }
+    pub fn is_in_check(&self, color: Color) -> bool {
+        MoveGenerator::is_square_attacked(self, self.king(color), color.opposite())
+    }
+    pub fn has_legal_moves(&mut self) -> bool {
+        !MoveGenerator::generate_valid_moves(self).is_empty()
+    }
+
+    pub fn game_state(&mut self) -> GameState {
+        let in_check = self.is_in_check(self.turn);
+        let has_moves = self.has_legal_moves();
+
+        match (in_check, has_moves) {
+            (false, true) => GameState::Ongoing,
+            (true,  true) => GameState::Check,
+            (true,  false) => GameState::Checkmate,
+            (false, false) => GameState::Stalemate,
+        }
+    }
 }
 
 impl Default for Board {
@@ -59,3 +86,4 @@ impl Default for Board {
         Self::from_fen(STARTING_FEN)
     }
 }
+
