@@ -89,24 +89,20 @@ impl ChessUI {
             }
             // Re-think how this should be handled
             // This should not be handeled by the UI, but rather in main or engine
-            if self.engine.game_state == GameState::Checkmate || self.engine.game_state == GameState::Stalemate {
-                let color = match self.engine.turn().opposite() {
-                    Color::White => "White",
-                    Color::Black => "Black",
-                };
+            self.engine.update();
+            if self.engine.is_game_over() {
                 match self.engine.game_state {
                     GameState::Checkmate => {
-                        println!("Game over, {color} wins")
+                        let winner = self.engine.turn().opposite();
+
+                        println!("Game over! {:?} wins!", winner);
                     }
                     GameState::Stalemate => {
-                        println!("Game over, Draw")
+                        println!("Game over! Draw.");
                     }
                     _ => {}
                 }
                 break 'running;
-            }
-            if self.engine.turn() == Color::Black {
-                self.engine.make_best_move();
             }
             
             self.draw(&mut canvas, &images)?;

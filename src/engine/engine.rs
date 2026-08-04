@@ -17,6 +17,15 @@ impl Engine {
             game_state: GameState::Ongoing,
         }
     }
+    pub fn update(&mut self) {
+        if self.is_game_over() {
+            return;
+        }
+
+        if self.turn() == Color::Black {
+            self.make_best_move();
+        }
+    }
 
     pub fn make_move(&mut self, from: Square, to: Square) -> bool{
         let all_moves = MoveGenerator::generate_valid_moves(&mut self.board);
@@ -34,6 +43,13 @@ impl Engine {
         }
         
     }
+    pub fn is_game_over(&self) -> bool {
+        match self.game_state {
+            GameState::Checkmate | GameState::Stalemate => true,
+            _ => false,
+        }
+    }
+
     pub fn show(&self) {
         self.board.show();
     }
@@ -60,4 +76,5 @@ impl Engine {
     fn update_game_state(&mut self) {
         self.game_state = self.board.game_state();
     }
+
 } // Impl Engine
