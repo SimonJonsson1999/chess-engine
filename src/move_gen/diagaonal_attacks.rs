@@ -1,8 +1,8 @@
-use crate::bitboard::BitBoard;
 use crate::board::Board;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::{Color, PieceMoveList, PieceType};
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::constants::DIAG_DIRECTIONS;
-use crate::piece::{Color, PieceMoveList, PieceType};
 impl MoveGenerator {
     pub(crate) fn generate_diag_slider_moves(
         moves: &mut PieceMoveList,

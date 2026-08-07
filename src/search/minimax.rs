@@ -1,9 +1,9 @@
-use crate::move_gen::MoveGenerator;
-use crate::piece::{Color, PieceMove};
-use crate::board::{Board};
-use crate::evaluation::Evaluator;
-use crate::search::Searcher;
+use crate::board::Board;
 use crate::board::GameState;
+use crate::board::piece::{Color, PieceMove};
+use crate::evaluation::Evaluator;
+use crate::move_gen::MoveGenerator;
+use crate::search::Searcher;
 
 const CHECKMATE_SCORE: i32 = 30_000;
 pub struct MiniMaxSearcher<E: Evaluator> {
@@ -12,22 +12,16 @@ pub struct MiniMaxSearcher<E: Evaluator> {
 impl<E: Evaluator> MiniMaxSearcher<E> {
     pub fn new(evaluator: E) -> Self {
         Self { evaluator }
-    }  
-     // Algortihm found here https://en.wikipedia.org/wiki/Minimax
+    }
+    // Algortihm found here https://en.wikipedia.org/wiki/Minimax
     fn minimax(&self, board: &mut Board, depth: u8) -> i32 {
         if depth == 0 {
             return self.evaluator.evaluate(board);
         }
         match board.game_state() {
-            GameState::Checkmate => {
-                match board.turn {
-                    Color::White => {
-                        return -CHECKMATE_SCORE
-                    },
-                    Color::Black => {
-                        return CHECKMATE_SCORE
-                    }
-                }
+            GameState::Checkmate => match board.turn {
+                Color::White => return -CHECKMATE_SCORE,
+                Color::Black => return CHECKMATE_SCORE,
             },
             GameState::Stalemate => return 0,
             _ => {}
@@ -67,7 +61,7 @@ impl<E: Evaluator> MiniMaxSearcher<E> {
                 best
             }
         }
-    }    
+    }
 }
 
 impl<E: Evaluator> Searcher for MiniMaxSearcher<E> {
@@ -81,10 +75,7 @@ impl<E: Evaluator> Searcher for MiniMaxSearcher<E> {
         for mv in moves {
             board.move_piece(mv);
 
-            let score = self.minimax(
-                board,
-                depth - 1,
-            );
+            let score = self.minimax(board, depth - 1);
 
             board.undo();
 
@@ -97,4 +88,3 @@ impl<E: Evaluator> Searcher for MiniMaxSearcher<E> {
         best_move.expect("No legal moves")
     }
 }
-

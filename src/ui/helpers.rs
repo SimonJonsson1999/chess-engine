@@ -1,7 +1,7 @@
-use std::cmp::min;
-use sdl3::rect::Rect;
-use crate::ui::ChessUI;
 use crate::move_gen::BOARDWIDTH;
+use crate::ui::ChessUI;
+use sdl3::rect::Rect;
+use std::cmp::min;
 
 impl ChessUI {
     pub(crate) fn get_board_rect(&self) -> Rect {

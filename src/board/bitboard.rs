@@ -1,12 +1,12 @@
-use crate::piece::{Color, Piece, PieceType};
-use crate::square::Square;
+use crate::board::Square;
+use crate::board::piece::{Color, Piece, PieceType};
 use std::ops::{BitAnd, BitOr, Index, IndexMut, Not, Shl, Shr};
 
 #[macro_export]
 macro_rules! bb {
     ($($sq:ident),* $(,)?) => {
-        $crate::bitboard::BitBoard(
-            0 $(| (1u64 << ($crate::square::Square::$sq as u8)))*
+        $crate::board::bitboard::BitBoard(
+            0 $(| (1u64 << ($crate::board::Square::$sq as u8)))*
         )
     };
 }

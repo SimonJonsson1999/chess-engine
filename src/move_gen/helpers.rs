@@ -1,13 +1,13 @@
-use crate::bitboard::BitBoard;
 use crate::board::Board;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
+use crate::board::square::Square;
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::attack_table::{
     BLACK_PAWN_ATTACKS, KING_ATTACKS, KNIGHT_ATTACKS, WHITE_PAWN_ATTACKS,
 };
 use crate::move_gen::constants::BOARDWIDTH;
 use crate::move_gen::constants::{DIAG_DIRECTIONS, STRAIGHT_DIRECTIONS};
-use crate::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
-use crate::square::Square;
 
 impl MoveGenerator {
     pub(crate) fn ray_attacks_from_sq(

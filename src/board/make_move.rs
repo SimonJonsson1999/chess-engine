@@ -1,8 +1,8 @@
 use crate::board::Board;
-use crate::log::LogEntry;
+use crate::board::log::LogEntry;
+use crate::board::piece::{Color, MoveKind, Piece, PieceMove, PieceType};
+use crate::board::square::Square;
 use crate::move_gen::BOARDWIDTH;
-use crate::piece::{Color, MoveKind, Piece, PieceMove, PieceType};
-use crate::square::Square;
 impl Board {
     pub fn move_piece(&mut self, piece_move: PieceMove) {
         // extract squares

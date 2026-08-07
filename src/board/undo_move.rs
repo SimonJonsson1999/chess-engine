@@ -1,8 +1,8 @@
 use crate::board::Board;
-use crate::log::LogEntry;
+use crate::board::log::LogEntry;
+use crate::board::piece::{Color, MoveKind, Piece, PieceType};
+use crate::board::square::Square;
 use crate::move_gen::BOARDWIDTH;
-use crate::piece::{Color, MoveKind, Piece, PieceType};
-use crate::square::Square;
 impl Board {
     pub fn undo(&mut self) {
         // If no moves in log, just return

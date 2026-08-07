@@ -1,19 +1,21 @@
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
-use sdl3::rect::{Rect, Point};
 use sdl3::mouse::MouseButton;
+use sdl3::rect::{Point, Rect};
 
-use crate::ui::ChessUI;
-use crate::bitboard::BitBoard;
+use crate::board::bitboard::BitBoard;
+use crate::board::square::Square;
 use crate::move_gen::BOARDWIDTH;
-use crate::square::Square;
+use crate::ui::ChessUI;
 
 impl ChessUI {
     pub(crate) fn handle_event(&mut self, event: Event) -> bool {
         // match dbg!(event) {
         match event {
-                    // Handle mouseclicks
-            Event::MouseButtonDown {mouse_btn, x, y , ..} => {
+            // Handle mouseclicks
+            Event::MouseButtonDown {
+                mouse_btn, x, y, ..
+            } => {
                 if mouse_btn == MouseButton::Left {
                     let mouse_pos = Point::new(x as i32, y as i32);
                     let board_rect = self.get_board_rect();
@@ -42,27 +44,27 @@ impl ChessUI {
                     }
                 }
             }
-        // Handle quitting
-        Event::Quit { .. }
-        | Event::KeyDown {
-            keycode: Some(Keycode::Escape),
-            ..
-        } => {
-            return false;
-        }
-        // Handle windowsize updates
-        Event::Window {
-            win_event: WindowEvent::Resized(width, height),
-            ..
-        } => {
-            println!("Window resized to {}x{}", width, height);
-            // Recalculate layout here
-            self.window_size = (width as u32, height as u32);
-        }
-
-        _ => {}
+            // Handle quitting
+            Event::Quit { .. }
+            | Event::KeyDown {
+                keycode: Some(Keycode::Escape),
+                ..
+            } => {
+                return false;
             }
-            return true
+            // Handle windowsize updates
+            Event::Window {
+                win_event: WindowEvent::Resized(width, height),
+                ..
+            } => {
+                println!("Window resized to {}x{}", width, height);
+                // Recalculate layout here
+                self.window_size = (width as u32, height as u32);
+            }
+
+            _ => {}
+        }
+        return true;
     }
 
     pub(crate) fn get_clicked_square(&self, point: Point, board_rect: &Rect) -> Square {
@@ -80,5 +82,4 @@ impl ChessUI {
             self.legal_destinations.set(square);
         }
     }
-                    
 }

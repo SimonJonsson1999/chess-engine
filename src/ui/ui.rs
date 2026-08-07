@@ -1,18 +1,15 @@
 use sdl3::EventPump;
 
-use sdl3::render::{Canvas};
+use crate::board::GameState;
+use crate::board::bitboard::BitBoard;
+use crate::board::square::Square;
+use crate::engine::Engine;
+use crate::ui::assets::Assets;
 use sdl3::Error;
+use sdl3::render::Canvas;
 use sdl3::video::Window;
 use std::println;
 use std::time::Duration;
-use crate::bitboard::BitBoard;
-use crate::engine::Engine;
-use crate::ui::assets::Assets;
-use crate::square::Square;
-use crate::board::GameState;
-
-
-
 
 // TODO
 
@@ -32,7 +29,6 @@ use crate::board::GameState;
 // Set a viewport, draw using coordinates relative to it, then switch to another viewport.
 // Drawing is clipped to the viewport. Only one viewport is active at a time.
 
-
 // -- Use textures, for example the board
 // Board rect (size)
 //         ↓
@@ -44,12 +40,10 @@ use crate::board::GameState;
 //         ↓
 // Each frame: render the texture into board_rect
 
-
 // Draw all legal moves from selected piece
 
 // Simplify the highlighted square and selected piece. Could probably use the selected
 // piece for changing the colkor of the square
-
 
 // Implement drag and drop of pieces instead of just clicking
 
@@ -59,7 +53,6 @@ pub struct ChessUI {
     pub(crate) window_size: (u32, u32),
     pub(crate) selected_square: Option<Square>,
     pub(crate) legal_destinations: BitBoard,
-
 }
 
 impl ChessUI {
@@ -78,36 +71,34 @@ impl ChessUI {
         let images = Assets::new(&texture_creator)?;
 
         'running: loop {
-        // Handle all pending events
-        for event in events.poll_iter() {
-            if !self.handle_event(event) {
-                break 'running;
-            }
-        }
-
-        if !self.engine.is_game_over() {
-            self.engine.update();
-
-            if self.engine.is_game_over() {
-                match self.engine.game_state {
-                    GameState::Checkmate |
-                    GameState::Stalemate |
-                    GameState::FiftyMoveRule => {
-                        println!("Turn: {:?}", self.engine.turn());
-                        println!("Game state: {:?}", self.engine.game_state);
-                        println!("Winner: {:?}", self.engine.turn().opposite());
-                    }
-
-                    _ => {}
+            // Handle all pending events
+            for event in events.poll_iter() {
+                if !self.handle_event(event) {
+                    break 'running;
                 }
             }
+
+            if !self.engine.is_game_over() {
+                self.engine.update();
+
+                if self.engine.is_game_over() {
+                    match self.engine.game_state {
+                        GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule => {
+                            println!("Turn: {:?}", self.engine.turn());
+                            println!("Game state: {:?}", self.engine.game_state);
+                            println!("Winner: {:?}", self.engine.turn().opposite());
+                        }
+
+                        _ => {}
+                    }
+                }
+            }
+
+            self.draw(&mut canvas, &images)?;
+            std::thread::sleep(Duration::from_millis(16));
         }
 
-        self.draw(&mut canvas, &images)?;
-        std::thread::sleep(Duration::from_millis(16));
-    }
-
-    Ok(())
+        Ok(())
     }
 
     pub fn init_sdl(&self) -> (Canvas<Window>, EventPump) {
@@ -130,5 +121,4 @@ impl ChessUI {
 
         (canvas, events)
     }
-
 }

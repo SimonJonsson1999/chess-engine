@@ -1,9 +1,9 @@
-use crate::bitboard::BitBoard;
 use crate::board::Board;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
+use crate::board::square::Square;
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::constants::{BOARDWIDTH, FILEA, FILEH, PROMOTION_PIECES, RANK2, RANK7};
-use crate::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
-use crate::square::Square;
 
 impl MoveGenerator {
     #[inline]

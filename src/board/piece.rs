@@ -1,4 +1,4 @@
-use crate::square::Square;
+use crate::board::square::Square;
 use std::fmt;
 
 // Each piece is represented using 8 bytes
@@ -16,7 +16,7 @@ impl PieceType {
     pub const fn idx(self) -> usize {
         self as usize
     }
-    
+
     pub const fn value(self) -> i32 {
         match self {
             PieceType::Pawn => 100,
@@ -209,7 +209,6 @@ impl Iterator for PieceMoveIter {
         Some(mv)
     }
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MoveKind {

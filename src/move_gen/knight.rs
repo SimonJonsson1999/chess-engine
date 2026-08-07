@@ -1,8 +1,8 @@
-use crate::bitboard::BitBoard;
 use crate::board::Board;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::{Color, PieceMoveList, PieceType};
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::attack_table::KNIGHT_ATTACKS;
-use crate::piece::{Color, PieceMoveList, PieceType};
 
 impl MoveGenerator {
     // Knight moves

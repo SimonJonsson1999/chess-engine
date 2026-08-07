@@ -1,6 +1,6 @@
 use crate::bb;
-use crate::bitboard::BitBoard;
-use crate::piece::PieceType;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::PieceType;
 // Define of constans used for move generation
 pub(crate) const RANK2: BitBoard = bb!(A2, B2, C2, D2, E2, F2, G2, H2);
 pub(crate) const RANK7: BitBoard = bb!(A7, B7, C7, D7, E7, F7, G7, H7);

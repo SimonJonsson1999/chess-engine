@@ -1,9 +1,9 @@
-use crate::move_gen::MoveGenerator;
-use crate::piece::{Color, PieceMove};
-use crate::board::{Board};
-use crate::evaluation::Evaluator;
-use crate::search::Searcher;
+use crate::board::Board;
 use crate::board::GameState;
+use crate::board::piece::{Color, PieceMove};
+use crate::evaluation::Evaluator;
+use crate::move_gen::MoveGenerator;
+use crate::search::Searcher;
 use rand::random;
 const CHECKMATE_SCORE: i32 = 30_000;
 pub struct NegaMaxAlphaBetaSearcher<E: Evaluator> {
@@ -12,8 +12,14 @@ pub struct NegaMaxAlphaBetaSearcher<E: Evaluator> {
 impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
     pub fn new(evaluator: E) -> Self {
         Self { evaluator }
-    }  
-    pub fn negamax_alpha_beta(&self, board: &mut Board, depth: u8, mut alpha: i32, beta: i32) -> i32 {
+    }
+    pub fn negamax_alpha_beta(
+        &self,
+        board: &mut Board,
+        depth: u8,
+        mut alpha: i32,
+        beta: i32,
+    ) -> i32 {
         match board.game_state() {
             GameState::Checkmate => return -CHECKMATE_SCORE + depth as i32,
             GameState::Stalemate => return -20,
@@ -23,10 +29,10 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
         if depth == 0 {
             return match board.turn {
                 Color::White => self.evaluator.evaluate(board),
-                Color::Black => -self.evaluator.evaluate(board)
+                Color::Black => -self.evaluator.evaluate(board),
             };
         }
-        
+
         let moves = MoveGenerator::generate_valid_moves(board);
         let mut best = i32::MIN;
 
@@ -42,11 +48,10 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
             if alpha >= beta {
                 break;
             }
-            
         }
 
         best
-    }      
+    }
 }
 
 impl<E: Evaluator> Searcher for NegaMaxAlphaBetaSearcher<E> {
@@ -60,12 +65,7 @@ impl<E: Evaluator> Searcher for NegaMaxAlphaBetaSearcher<E> {
         for mv in moves {
             board.move_piece(mv);
 
-            let score = -self.negamax_alpha_beta(
-                board,
-                depth - 1,
-                i32::MIN,
-                i32::MAX,
-            );
+            let score = -self.negamax_alpha_beta(board, depth - 1, i32::MIN, i32::MAX);
 
             board.undo();
 
@@ -76,7 +76,7 @@ impl<E: Evaluator> Searcher for NegaMaxAlphaBetaSearcher<E> {
                 best_move = Some(mv);
                 best_score = score;
             }
-                        // println!("{:?} -> {}", mv, score);
+            // println!("{:?} -> {}", mv, score);
         }
         println!("{:?} -> {}", best_move, best_score);
         best_move.expect("No legal moves")

@@ -1,7 +1,7 @@
 use crate::board::Board;
+use crate::board::piece::{Color, PieceMoveList};
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::attack_table::KING_ATTACKS;
-use crate::piece::{Color, PieceMoveList};
 impl MoveGenerator {
     // King moves
 

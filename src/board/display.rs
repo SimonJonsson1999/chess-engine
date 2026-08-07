@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::piece::{Color, PieceType};
+use crate::board::piece::{Color, PieceType};
 impl Board {
     pub fn show(&self) {
         let mut piece_names: [Option<(Color, PieceType)>; 64] = [None; 64];

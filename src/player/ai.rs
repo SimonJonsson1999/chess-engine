@@ -1,6 +1,6 @@
-use crate::search::Searcher;
 use crate::board::Board;
-use crate::piece::PieceMove;
+use crate::board::piece::PieceMove;
+use crate::search::Searcher;
 
 pub trait AI {
     fn choose_move(&mut self, board: &mut Board) -> PieceMove;
@@ -20,7 +20,5 @@ impl<S: Searcher> Computer<S> {
 impl<S: Searcher> AI for Computer<S> {
     fn choose_move(&mut self, board: &mut Board) -> PieceMove {
         self.searcher.best_move(board, self.depth)
-        
-
     }
 }

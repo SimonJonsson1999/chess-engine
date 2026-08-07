@@ -1,9 +1,9 @@
-use crate::bitboard::{BitBoard, BitBoards};
 use crate::board::CastlingRights;
-use crate::log::MoveLog;
+use crate::board::bitboard::{BitBoard, BitBoards};
+use crate::board::log::MoveLog;
+use crate::board::piece::{Color, Piece, PieceType};
+use crate::board::square::{Square, SquareMap};
 use crate::move_gen::MoveGenerator;
-use crate::piece::{Color, Piece, PieceType};
-use crate::square::{Square, SquareMap};
 const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 // All pieces are represented using 6*2 bitboards, for the 6 different pieces
 // for both colors
@@ -45,7 +45,6 @@ impl Board {
             turn: Color::White,
             half_move: 0,
             full_move: 0,
-
         }
     }
 
@@ -79,8 +78,8 @@ impl Board {
 
         match (in_check, has_moves) {
             (false, true) => GameState::Ongoing,
-            (true,  true) => GameState::Check,
-            (true,  false) => GameState::Checkmate,
+            (true, true) => GameState::Check,
+            (true, false) => GameState::Checkmate,
             (false, false) => GameState::Stalemate,
         }
     }
@@ -91,4 +90,3 @@ impl Default for Board {
         Self::from_fen(STARTING_FEN)
     }
 }
-

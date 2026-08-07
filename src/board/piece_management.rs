@@ -1,6 +1,6 @@
 use crate::board::Board;
-use crate::piece::{Color, Piece};
-use crate::square::Square;
+use crate::board::piece::{Color, Piece};
+use crate::board::square::Square;
 impl Board {
     pub(crate) fn add_piece(&mut self, piece: Piece, sq: Square) {
         self.bitboards[piece].set(sq);

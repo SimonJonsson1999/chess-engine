@@ -1,7 +1,7 @@
 use crate::board::CastlingRights;
-use crate::piece::MoveKind;
-use crate::piece::Piece;
-use crate::square::Square;
+use crate::board::piece::MoveKind;
+use crate::board::piece::Piece;
+use crate::board::square::Square;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct LogEntry {

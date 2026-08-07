@@ -1,27 +1,34 @@
-use sdl3::render::{Canvas};
-use sdl3::video::Window;
-use sdl3::pixels::{Color};
-use sdl3::Error;
-use sdl3::rect::{Rect, Point};
-use crate::ui::assets::Assets;
-use crate::ui::ChessUI;
-use crate::square::Square;
+use crate::board::square::Square;
 use crate::move_gen::BOARDWIDTH;
+use crate::ui::ChessUI;
+use crate::ui::assets::Assets;
+use sdl3::Error;
+use sdl3::pixels::Color;
+use sdl3::rect::{Point, Rect};
+use sdl3::render::Canvas;
+use sdl3::video::Window;
 
 impl ChessUI {
-    pub(crate) fn draw(&mut self, canvas: &mut Canvas<Window>, images: &Assets) -> Result<(), Error> {
-            // Draw one frame
-            canvas.set_draw_color(Color::RGB(30, 30, 30));
-            canvas.clear();
+    pub(crate) fn draw(
+        &mut self,
+        canvas: &mut Canvas<Window>,
+        images: &Assets,
+    ) -> Result<(), Error> {
+        // Draw one frame
+        canvas.set_draw_color(Color::RGB(30, 30, 30));
+        canvas.clear();
 
-            self.draw_board(canvas, &images)?;
+        self.draw_board(canvas, &images)?;
 
-            canvas.present();
-            Ok(())
+        canvas.present();
+        Ok(())
     }
 
-    pub(crate) fn draw_board(&mut self, canvas: &mut Canvas<Window>, images: &Assets)  -> Result<(), Error> 
-    {
+    pub(crate) fn draw_board(
+        &mut self,
+        canvas: &mut Canvas<Window>,
+        images: &Assets,
+    ) -> Result<(), Error> {
         let tile_size = self.tile_size();
         let board_rect = self.get_board_rect();
         for rank in 0..BOARDWIDTH {
@@ -32,41 +39,31 @@ impl ChessUI {
                 let square = Rect::new(x, y, tile_size as u32, tile_size as u32);
                 let board_rank = BOARDWIDTH - 1 - rank;
                 let piece_square = Square::from_rank_file(board_rank as u8, file as u8);
-                
+
                 if self.selected_square(piece_square) {
-                        canvas.set_draw_color(Color::RGB(246, 246, 105)); // highlighted light
-                }
-                else if self.legal_destinations.is_set(piece_square) {
+                    canvas.set_draw_color(Color::RGB(246, 246, 105)); // highlighted light
+                } else if self.legal_destinations.is_set(piece_square) {
                     self.draw_move_circle(canvas, square)?;
-                }
-                else if (rank + file) % 2 == 0 {
+                } else if (rank + file) % 2 == 0 {
                     canvas.set_draw_color(Color::RGB(240, 217, 181)) // light
-                    
                 } else {
-                        canvas.set_draw_color(Color::RGB(181, 136, 99)); // dark
+                    canvas.set_draw_color(Color::RGB(181, 136, 99)); // dark
                 }
 
                 canvas.fill_rect(square)?;
                 // Create API to get piece, not by getting the inner structure like this
                 if let Some(piece) = self.engine.board.piece_on_square[piece_square] {
-                    canvas.copy(
-                        &images[piece],
-                        None,
-                        square,
-                    )?;
+                    canvas.copy(&images[piece], None, square)?;
                 }
             }
-                    
         }
         Ok(())
     }
 
     pub(crate) fn selected_square(&self, square: Square) -> bool {
         match self.selected_square {
-            Some(selected_square) => {
-                square == selected_square
-            },
-            None => false
+            Some(selected_square) => square == selected_square,
+            None => false,
         }
     }
     pub(crate) fn draw_move_circle(
@@ -84,10 +81,7 @@ impl ChessUI {
         for dy in -radius..=radius {
             let dx = ((radius * radius - dy * dy) as f32).sqrt() as i32;
 
-            canvas.draw_line(
-                Point::new(cx - dx, cy + dy),
-                Point::new(cx + dx, cy + dy),
-            )?;
+            canvas.draw_line(Point::new(cx - dx, cy + dy), Point::new(cx + dx, cy + dy))?;
         }
 
         Ok(())

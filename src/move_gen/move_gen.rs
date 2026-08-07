@@ -1,6 +1,6 @@
 use crate::board::Board;
-use crate::piece::{Color, MoveKind, PieceMove, PieceMoveList};
-use crate::square::Square;
+use crate::board::piece::{Color, MoveKind, PieceMove, PieceMoveList};
+use crate::board::square::Square;
 
 pub struct MoveGenerator {}
 impl MoveGenerator {
@@ -23,16 +23,13 @@ impl MoveGenerator {
         MoveGenerator::generate_castling(&mut possible_moves, board, color);
         possible_moves
     }
-    
-    pub fn generate_valid_moves_from(
-        board: &mut Board,
-        from: Square,
-    ) -> PieceMoveList{
+
+    pub fn generate_valid_moves_from(board: &mut Board, from: Square) -> PieceMoveList {
         let moves_from_sq = MoveGenerator::generate_valid_moves(board)
-                                        .iter()
-                                        .copied()
-                                        .filter(|mv| mv.from == from)
-                                        .collect();
+            .iter()
+            .copied()
+            .filter(|mv| mv.from == from)
+            .collect();
         moves_from_sq
     }
 

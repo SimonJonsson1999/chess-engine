@@ -1,9 +1,9 @@
-use std::ops::{Index, IndexMut};
-use sdl3::image::{LoadTexture};
+use crate::board::piece::Piece;
+use sdl3::Error;
+use sdl3::image::LoadTexture;
 use sdl3::render::{Texture, TextureCreator};
 use sdl3::video::WindowContext;
-use crate::piece::{Piece};
-use sdl3::Error;
+use std::ops::{Index, IndexMut};
 pub struct Assets<'a> {
     pub piece_textures: [[Texture<'a>; 6]; 2],
 }

@@ -1,9 +1,9 @@
-use crate::move_gen::MoveGenerator;
-use crate::piece::{Color, PieceMove};
-use crate::board::{Board};
-use crate::evaluation::Evaluator;
-use crate::search::Searcher;
+use crate::board::Board;
 use crate::board::GameState;
+use crate::board::piece::{Color, PieceMove};
+use crate::evaluation::Evaluator;
+use crate::move_gen::MoveGenerator;
+use crate::search::Searcher;
 
 const CHECKMATE_SCORE: i32 = 30_000;
 pub struct MiniMaxAlphaBetaSercher<E: Evaluator> {
@@ -12,22 +12,22 @@ pub struct MiniMaxAlphaBetaSercher<E: Evaluator> {
 impl<E: Evaluator> MiniMaxAlphaBetaSercher<E> {
     pub fn new(evaluator: E) -> Self {
         Self { evaluator }
-    }  
-    pub fn minimax_alpha_beta(&self, board: &mut Board, depth: u8, mut alpha: i32, mut beta: i32) -> i32 {
+    }
+    pub fn minimax_alpha_beta(
+        &self,
+        board: &mut Board,
+        depth: u8,
+        mut alpha: i32,
+        mut beta: i32,
+    ) -> i32 {
         if depth == 0 {
             return self.evaluator.evaluate(board);
         }
 
         match board.game_state() {
-            GameState::Checkmate => {
-                match board.turn {
-                    Color::White => {
-                        return -CHECKMATE_SCORE
-                    },
-                    Color::Black => {
-                        return CHECKMATE_SCORE
-                    }
-                }
+            GameState::Checkmate => match board.turn {
+                Color::White => return -CHECKMATE_SCORE,
+                Color::Black => return CHECKMATE_SCORE,
             },
             GameState::Stalemate => return 0,
             _ => {}
@@ -43,9 +43,9 @@ impl<E: Evaluator> MiniMaxAlphaBetaSercher<E> {
                     let score = self.minimax_alpha_beta(board, depth - 1, alpha, beta);
 
                     board.undo();
-                    
+
                     if score >= beta {
-                        return beta
+                        return beta;
                     }
                     alpha = alpha.max(score);
                     best = best.max(score);
@@ -64,7 +64,7 @@ impl<E: Evaluator> MiniMaxAlphaBetaSercher<E> {
 
                     board.undo();
                     if score <= alpha {
-                        return alpha
+                        return alpha;
                     }
                     beta = beta.min(score);
                     best = best.min(score);
@@ -73,7 +73,7 @@ impl<E: Evaluator> MiniMaxAlphaBetaSercher<E> {
                 best
             }
         }
-    }      
+    }
 }
 
 impl<E: Evaluator> Searcher for MiniMaxAlphaBetaSercher<E> {
@@ -87,12 +87,7 @@ impl<E: Evaluator> Searcher for MiniMaxAlphaBetaSercher<E> {
         for mv in moves {
             board.move_piece(mv);
 
-            let score = self.minimax_alpha_beta(
-                board,
-                depth - 1,
-                i32::MIN,
-                i32::MAX,
-            );
+            let score = self.minimax_alpha_beta(board, depth - 1, i32::MIN, i32::MAX);
 
             board.undo();
 
@@ -104,7 +99,6 @@ impl<E: Evaluator> Searcher for MiniMaxAlphaBetaSercher<E> {
 
         best_move.expect("No legal moves")
     }
-}    
-    
-    // https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
-    
+}
+
+// https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning

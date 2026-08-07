@@ -1,6 +1,6 @@
+use crate::board::piece::{Color, Piece};
+use crate::board::square::Square;
 use crate::board::{Board, CastlingRights};
-use crate::piece::{Color, Piece};
-use crate::square::Square;
 impl Board {
     pub fn from_fen(fen: &str) -> Self {
         let mut board = Board::empty();

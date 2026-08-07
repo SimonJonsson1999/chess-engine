@@ -1,7 +1,7 @@
-use crate::bitboard::BitBoard;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::Color;
+use crate::board::square::Square;
 use crate::move_gen::constants::{KING_DIRECTIONS, KNIGHT_DIRECTIONS};
-use crate::piece::Color;
-use crate::square::Square;
 use std::ops::Index;
 pub struct AttackTable([BitBoard; 64]);
 

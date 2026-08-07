@@ -1,8 +1,8 @@
-use crate::bitboard::BitBoard;
 use crate::board::Board;
+use crate::board::bitboard::BitBoard;
+use crate::board::piece::{Color, PieceMoveList, PieceType};
 use crate::move_gen::MoveGenerator;
 use crate::move_gen::constants::STRAIGHT_DIRECTIONS;
-use crate::piece::{Color, PieceMoveList, PieceType};
 impl MoveGenerator {
     pub(crate) fn generate_ortogonal_slider_moves(
         moves: &mut PieceMoveList,
