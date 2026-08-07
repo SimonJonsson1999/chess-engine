@@ -3,6 +3,7 @@ use crate::board::piece::{Color, PieceType};
 use crate::evaluation::positions::{
     BISHOP_PST, KING_MIDDLE_PST, KNIGHT_PST, PAWN_PST, QUEEN_PST, ROOK_PST,
 };
+use crate::move_gen::MoveGenerator;
 pub struct BoardEvaluation;
 
 // Consider using const array like this in future
@@ -84,17 +85,23 @@ impl BoardEvaluation {
     }
 
     fn tempo(board: &Board) -> i32 {
-        let mut score = 0;
+
         match board.turn {
-            Color::White => score = 10,
-            Color::Black => score = 10,
+            Color::White => 10,
+            Color::Black => -10,
         }
-        score
+    }
+
+    fn mobility(board: &Board) -> i32 {
+        let white = MoveGenerator::generate_all_moves(board, Color::White).len() as i32;
+        let black = MoveGenerator::generate_all_moves(board, Color::Black).len() as i32;
+
+        white - black
     }
 }
 impl Evaluator for BoardEvaluation {
     fn evaluate(&self, board: &Board) -> i32 {
-        Self::material(board) + Self::piece_positions(board) + Self::tempo(board)
+        Self::material(board) + Self::piece_positions(board) + Self::tempo(board) * 2 + Self::mobility(board) * 3
     }
 }
 #[cfg(test)]
