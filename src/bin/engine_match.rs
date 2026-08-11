@@ -7,12 +7,12 @@ use chess_engine::ui::ChessUI;
 fn main() {
     let white = PlayerType::AI(Box::new(Computer::new(
         NegaMaxAlphaBetaSearcher::new(BoardEvaluation {}),
-        5,
+        3,
     )));
 
     let black = PlayerType::AI(Box::new(Computer::new(
         NegaMaxAlphaBetaSearcher::new(BoardEvaluation {}),
-        4,
+        3,
     )));
 
     let engine = Engine::new(white, black);

@@ -122,3 +122,64 @@ impl Default for Board {
         Self::from_fen(STARTING_FEN)
     }
 }
+#[test]
+fn test_threefold_repetition() {
+    use crate::board::{PieceMove, MoveKind};
+    let mut board = Board::default();
+
+    // Starting position = occurrence #1
+
+    // Nf3 Nf6
+    board.move_piece(PieceMove::new(
+        Square::G1,
+        Square::F3,
+        MoveKind::Quiet,
+    ));
+    board.move_piece(PieceMove::new(
+        Square::G8,
+        Square::F6,
+        MoveKind::Quiet,
+    ));
+
+    // Ng1 Ng8
+    board.move_piece(PieceMove::new(
+        Square::F3,
+        Square::G1,
+        MoveKind::Quiet,
+    ));
+    board.move_piece(PieceMove::new(
+        Square::F6,
+        Square::G8,
+        MoveKind::Quiet,
+    ));
+
+    // Starting position = occurrence #2
+    assert!(!board.is_threefold_repetition());
+
+    // Nf3 Nf6
+    board.move_piece(PieceMove::new(
+        Square::G1,
+        Square::F3,
+        MoveKind::Quiet,
+    ));
+    board.move_piece(PieceMove::new(
+        Square::G8,
+        Square::F6,
+        MoveKind::Quiet,
+    ));
+
+    // Ng1 Ng8
+    board.move_piece(PieceMove::new(
+        Square::F3,
+        Square::G1,
+        MoveKind::Quiet,
+    ));
+    board.move_piece(PieceMove::new(
+        Square::F6,
+        Square::G8,
+        MoveKind::Quiet,
+    ));
+
+    // Starting position = occurrence #3
+    assert!(board.is_threefold_repetition());
+}

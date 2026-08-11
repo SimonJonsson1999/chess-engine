@@ -40,6 +40,7 @@ impl Engine {
                 let mv = ai.choose_move(&mut self.board);
 
                 self.board.move_piece(mv);
+                std::println!("{}", mv);
                 self.update_game_state();
             }
         }
@@ -48,10 +49,17 @@ impl Engine {
     pub fn make_move(&mut self, from: Square, to: Square) -> bool {
         let all_moves = MoveGenerator::generate_valid_moves(&mut self.board);
         let next_move = all_moves.iter().find(|mv| mv.from == from && mv.to == to);
+        
         match next_move {
             Some(next_move) => {
                 self.board.move_piece(*next_move);
                 self.update_game_state();
+        //         println!(
+        //     "turn={:?} hash={} repetition={}",
+        //     self.board.turn,
+        //     self.board.zobrist_hash,
+        //     self.board.is_threefold_repetition(),
+        // );
                 return true;
             }
             None => {
@@ -59,10 +67,11 @@ impl Engine {
                 return false;
             }
         }
+        
     }
     pub fn is_game_over(&self) -> bool {
         match self.game_state {
-            GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule => true,
+            GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule |GameState::DrawRepetition => true,
             _ => false,
         }
     }

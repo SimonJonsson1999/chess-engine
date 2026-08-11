@@ -1,39 +1,52 @@
 use crate::board::Board;
-use crate::board::GameState;
-use crate::board::PieceMoveList;
 use crate::board::piece::{Color, PieceMove};
 use crate::evaluation::Evaluator;
 use crate::move_gen::MoveGenerator;
 use crate::search::Searcher;
 use crate::board::MoveKind;
+use crate::search::{TranspositionTable, TTEntry, Bound};
 use std::cmp::Reverse;
+use std::println;
 use rand::random;
 const CHECKMATE_SCORE: i32 = 30_000;
 const DRAW_SCORE: i32 = 0;
 pub struct NegaMaxAlphaBetaSearcher<E: Evaluator> {
     evaluator: E,
+    tt: TranspositionTable,
 }
 impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
     pub fn new(evaluator: E) -> Self {
-        Self { evaluator }
+        let tt = TranspositionTable::new(64);
+        Self { evaluator, tt }
     }
     pub fn negamax_alpha_beta(
-        &self,
+        &mut self,
         board: &mut Board,
         depth: u8,
         ply: u8,
         mut alpha: i32,
-        beta: i32,
+        mut beta: i32,
     ) -> i32 {
         
-        if depth == 0 {
-            return match board.turn {
-                Color::White => self.evaluator.evaluate(board),
-                Color::Black => -self.evaluator.evaluate(board),
-            };
-        }
-        if board.is_threefold_repetition() || board.is_fifty_move_rule() {
-            return DRAW_SCORE;
+        
+
+
+        // Check if current position after move is in transposition table
+        let hash = board.zobrist_hash;
+        let alpha_original = alpha;
+        let beta_original = beta;
+        if let Some(entry) = self.tt.get(hash) {
+            if entry.depth >= depth {
+                match entry.bound {
+                    Bound::Exact => return entry.score,
+                    Bound::Lower => alpha = alpha.max(entry.score),
+                    Bound::Upper => beta = beta.min(entry.score),
+                }
+
+                if alpha >= beta {
+                    return entry.score;
+                }
+            }
         }
 
         let moves = self.ordered_moves(board);
@@ -44,9 +57,22 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
             }
             return DRAW_SCORE;
         }
+        if depth == 0 {
+            return match board.turn {
+                Color::White => self.evaluator.evaluate(board),
+                Color::Black => -self.evaluator.evaluate(board),
+            };
+        }
+        if board.is_threefold_repetition() || board.is_fifty_move_rule() {
+            return DRAW_SCORE;
+        }
 
+        
+
+        let mut best_score = i32::MIN;
         for mv in moves {
             board.move_piece(mv);
+
 
             let score = -self.negamax_alpha_beta(
                 board,
@@ -58,15 +84,30 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
 
             board.undo();
 
+            best_score = best_score.max(score);
             alpha = alpha.max(score);
 
             if alpha >= beta {
                 break;
             }
         }
+        let bound = if best_score <= alpha_original {
+            Bound::Upper
+        } else if best_score >= beta_original {
+            Bound::Lower
+        } else {
+            Bound::Exact
+        };
 
-        alpha
-            }
+        self.tt.store(TTEntry {
+            hash,
+            depth,
+            score: best_score,
+            bound,
+        });
+
+        best_score
+    }
 
     fn ordered_moves(&self, board: &mut Board) -> Vec<PieceMove> {
         let mut moves: Vec<ScoredMove> = MoveGenerator::generate_valid_moves(board)
@@ -133,7 +174,7 @@ impl<E: Evaluator> Searcher for NegaMaxAlphaBetaSearcher<E> {
             let mv = scored_move.mv;
             board.move_piece(mv);
 
-            let score = -self.negamax_alpha_beta(board, depth - 1,0, i32::MIN, i32::MAX);
+            let score = -self.negamax_alpha_beta(board, depth - 1,1, i32::MIN, i32::MAX);
 
             board.undo();
 

@@ -83,7 +83,7 @@ impl ChessUI {
 
                 if self.engine.is_game_over() {
                     match self.engine.game_state {
-                        GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule => {
+                        GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule | GameState::DrawRepetition => {
                             println!("Turn: {:?}", self.engine.turn());
                             println!("Game state: {:?}", self.engine.game_state);
                             println!("Winner: {:?}", self.engine.turn().opposite());

@@ -8,7 +8,8 @@ fn main() {
     let evaluator = BoardEvaluation {};
     let searcher = NegaMaxAlphaBetaSearcher::new(evaluator);
     let white = PlayerType::Human;
-    let black = PlayerType::AI(Box::new(Computer::new(searcher, 3)));
+    let black = PlayerType::Human;
+    // let black = PlayerType::AI(Box::new(Computer::new(searcher, 3)));
 
     let engine = Engine::new(white, black);
 
