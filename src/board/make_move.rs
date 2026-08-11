@@ -2,6 +2,7 @@ use crate::board::Board;
 use crate::board::log::LogEntry;
 use crate::board::piece::{Color, MoveKind, Piece, PieceMove, PieceType};
 use crate::board::square::Square;
+use crate::board::zobrist::Zobrist;
 use crate::move_gen::BOARDWIDTH;
 impl Board {
     pub fn move_piece(&mut self, piece_move: PieceMove) {
@@ -14,6 +15,7 @@ impl Board {
         let previous_enpassant = self.enpassant;
         let previous_half_move = self.half_move;
         let previous_full_move = self.full_move;
+        let previous_zobrist_hash = self.zobrist_hash;
 
         // Extract moved and captured pieces
         let from_piece = self.piece_on_square[from_sq].expect("No piece on from square");
@@ -75,6 +77,7 @@ impl Board {
             piece_move.kind,
             previous_half_move,
             previous_full_move,
+            previous_zobrist_hash,
         ));
         // udpate full move counter if it was blacks turn
         match self.turn {
@@ -82,6 +85,17 @@ impl Board {
             _ => {}
         }
 
+        // update zobrist hash
+        self.zobrist_hash = Zobrist::update(
+            self.zobrist_hash,
+            piece_move,
+            from_piece,
+            captured_piece,
+            previous_castling_rights,
+            self.castling_rights,
+            previous_enpassant,
+            self.enpassant,
+        );
         // Switch the turn after a succesful move
         self.switch_turn()
     }

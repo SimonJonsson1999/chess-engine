@@ -182,3 +182,17 @@ impl<T> IndexMut<Square> for SquareMap<T> {
         &mut self.0[square as usize]
     }
 }
+
+
+impl<T: Copy> SquareMap<Option<T>> {
+    pub fn occupied(&self) -> impl Iterator<Item = (Square, T)> + '_ {
+        self.0
+            .iter()
+            .enumerate()
+            .filter_map(|(index, value)| {
+                value.map(|value| {
+                    (Square::from_index(index as u8), value)
+                })
+            })
+    }
+}

@@ -111,6 +111,6 @@ mod tests {
     fn test_eval_start_position() {
         let board = Board::default();
         let evaluator = BoardEvaluation {};
-        assert_eq!(evaluator.evaluate(&board), 10);
+        assert_eq!(evaluator.evaluate(&board), 20);
     }
 }

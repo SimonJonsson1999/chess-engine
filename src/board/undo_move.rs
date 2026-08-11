@@ -16,6 +16,7 @@ impl Board {
         self.castling_rights = last_move.previous_castling_rights;
         self.half_move = last_move.previous_half_move;
         self.full_move = last_move.previous_full_move;
+        self.zobrist_hash = last_move.previous_zobrist_hash;
 
         // get moved piece
         let moved_piece =

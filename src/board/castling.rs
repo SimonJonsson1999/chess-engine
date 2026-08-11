@@ -22,4 +22,10 @@ impl CastlingRights {
             black_queenside: false,
         }
     }
+    pub const fn index(&self) -> usize {
+        (self.white_kingside as usize)
+            | ((self.white_queenside as usize) << 1)
+            | ((self.black_kingside as usize) << 2)
+            | ((self.black_queenside as usize) << 3)
+    }
 }

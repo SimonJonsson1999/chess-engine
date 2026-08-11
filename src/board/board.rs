@@ -3,6 +3,7 @@ use crate::board::bitboard::{BitBoard, BitBoards};
 use crate::board::log::MoveLog;
 use crate::board::piece::{Color, Piece, PieceType};
 use crate::board::square::{Square, SquareMap};
+use crate::board::zobrist::Zobrist;
 use crate::move_gen::MoveGenerator;
 const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 // All pieces are represented using 6*2 bitboards, for the 6 different pieces
@@ -15,6 +16,7 @@ pub enum GameState {
     Checkmate,
     Stalemate,
     FiftyMoveRule,
+    DrawRepetition,
 }
 #[derive(PartialEq, Eq, Debug)]
 pub struct Board {
@@ -29,14 +31,15 @@ pub struct Board {
     pub turn: Color,
     pub half_move: u8,
     pub full_move: u8,
+    pub zobrist_hash: u64,
 }
 
 impl Board {
     pub fn empty() -> Self {
-        Self {
+        let mut board = Self {
             bitboards: BitBoards::default(),
             piece_on_square: SquareMap::new([None; 64]),
-            empty: BitBoard(!0), // or BitBoard(!0)
+            empty: BitBoard(!0),
             white: BitBoard(0),
             black: BitBoard(0),
             move_log: MoveLog::new(),
@@ -45,7 +48,12 @@ impl Board {
             turn: Color::White,
             half_move: 0,
             full_move: 0,
-        }
+            zobrist_hash: 0,
+        };
+
+        board.zobrist_hash = Zobrist::compute(&board);
+
+        board
     }
 
     pub fn king(&self, color: Color) -> Square {
@@ -72,6 +80,9 @@ impl Board {
         if self.half_move >= 100 {
             return GameState::FiftyMoveRule;
         }
+        if self.is_threefold_repetition(){
+            return GameState::DrawRepetition
+        }
 
         let in_check = self.is_in_check(self.turn);
         let has_moves = self.has_legal_moves();
@@ -82,6 +93,27 @@ impl Board {
             (true, false) => GameState::Checkmate,
             (false, false) => GameState::Stalemate,
         }
+    }
+
+    pub fn is_threefold_repetition(&self) -> bool {
+        let current = self.zobrist_hash;
+
+        let mut count = 1; // current position
+
+        for entry in self.move_log.iter().rev() {
+            if entry.previous_zobrist_hash == current {
+                count += 1;
+
+                if count >= 3 {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+    pub fn is_fifty_move_rule(&self) -> bool {
+        self.half_move >= 100
     }
 }
 

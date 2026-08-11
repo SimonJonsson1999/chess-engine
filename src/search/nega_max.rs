@@ -9,7 +9,7 @@ use crate::board::MoveKind;
 use std::cmp::Reverse;
 use rand::random;
 const CHECKMATE_SCORE: i32 = 30_000;
-const DRAW_SCORE: i32 = -50;
+const DRAW_SCORE: i32 = 0;
 pub struct NegaMaxAlphaBetaSearcher<E: Evaluator> {
     evaluator: E,
 }
@@ -25,11 +25,15 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
         mut alpha: i32,
         beta: i32,
     ) -> i32 {
+        
         if depth == 0 {
             return match board.turn {
                 Color::White => self.evaluator.evaluate(board),
                 Color::Black => -self.evaluator.evaluate(board),
             };
+        }
+        if board.is_threefold_repetition() || board.is_fifty_move_rule() {
+            return DRAW_SCORE;
         }
 
         let moves = self.ordered_moves(board);

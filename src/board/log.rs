@@ -13,6 +13,7 @@ pub struct LogEntry {
     pub move_kind: MoveKind,
     pub previous_half_move: u8,
     pub previous_full_move: u8,
+    pub previous_zobrist_hash: u64,
 }
 impl LogEntry {
     pub fn new(
@@ -24,6 +25,7 @@ impl LogEntry {
         move_kind: MoveKind,
         previous_half_move: u8,
         previous_full_move: u8,
+        previous_zobrist_hash: u64,
     ) -> Self {
         LogEntry {
             from,
@@ -34,6 +36,7 @@ impl LogEntry {
             move_kind,
             previous_half_move,
             previous_full_move,
+            previous_zobrist_hash,
         }
     }
 }
@@ -67,5 +70,8 @@ impl MoveLog {
                 }
             }
         }
+    }
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &LogEntry> {
+        self.moves.iter()
     }
 }

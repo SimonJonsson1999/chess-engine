@@ -1,5 +1,6 @@
 use crate::board::piece::{Color, Piece};
 use crate::board::square::Square;
+use crate::board::zobrist::Zobrist;
 use crate::board::{Board, CastlingRights};
 impl Board {
     pub fn from_fen(fen: &str) -> Self {
@@ -66,6 +67,7 @@ impl Board {
         board.half_move = halfmove_string.parse().unwrap();
         let fullmove_string = parts[5];
         board.full_move = fullmove_string.parse().unwrap();
+        board.zobrist_hash = Zobrist::compute(&board);
         board
     }
 
