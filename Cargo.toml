@@ -3,6 +3,9 @@ name = "chess-engine"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+benchmark = []
+
 [dependencies]
 sdl3 = { version = "0.18", features = ["image", "ttf"] }
 rand = "0.9"
