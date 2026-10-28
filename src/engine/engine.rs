@@ -1,5 +1,3 @@
-use std::println;
-
 use crate::board::Board;
 use crate::board::GameState;
 use crate::board::bitboard::BitBoard;
@@ -47,6 +45,9 @@ impl Engine {
     }
 
     pub fn make_move(&mut self, from: Square, to: Square) -> bool {
+        if self.is_game_over() {
+            return false;
+        }
         let all_moves = MoveGenerator::generate_valid_moves(&mut self.board);
         let next_move = all_moves.iter().find(|mv| mv.from == from && mv.to == to);
         
@@ -54,12 +55,6 @@ impl Engine {
             Some(next_move) => {
                 self.board.move_piece(*next_move);
                 self.update_game_state();
-        //         println!(
-        //     "turn={:?} hash={} repetition={}",
-        //     self.board.turn,
-        //     self.board.zobrist_hash,
-        //     self.board.is_threefold_repetition(),
-        // );
                 return true;
             }
             None => {

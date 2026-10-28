@@ -1,4 +1,5 @@
 use crate::board::{Board, Color, PieceMove, Piece, CastlingRights, Square, MoveKind, PieceType};
+use crate::move_gen::MoveGenerator;
 struct ZobristKeys {
     pieces: [[[u64; 64]; 6]; 2],
     castling: [u64; 16],
@@ -79,13 +80,20 @@ impl Zobrist {
         }
 
         hash ^= ZOBRIST_KEYS.castling[board.castling_rights.index()];
-        if let Some(square) = board.enpassant {
+        if let Some(square) = Self::en_passant_square(board) {
             hash ^= ZOBRIST_KEYS.en_passant[square.file() as usize];
         }
         if board.turn == Color::Black {
             hash ^= ZOBRIST_KEYS.side_to_move;
         }
         hash
+    }
+
+    pub fn en_passant_square(board: &Board) -> Option<Square> {
+        // An unavailable en passant capture does not change position identity.
+        board
+            .enpassant
+            .filter(|_| MoveGenerator::has_legal_enpassant(board))
     }
 
     pub fn update(
@@ -367,6 +375,57 @@ mod tests {
         ));
 
         assert_hash_correct(&board);
+    }
+
+    #[test]
+    fn en_passant_hash_tracks_legal_captures_for_both_colors() {
+        for (fen, from, to, capturable) in [
+            (
+                "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1",
+                Square::D7,
+                Square::D5,
+                true,
+            ),
+            (
+                "4k3/8/8/8/3p4/8/4P3/4K3 w - - 0 1",
+                Square::E2,
+                Square::E4,
+                true,
+            ),
+            (
+                "k3r3/3p4/8/4P3/8/8/8/4K3 b - - 0 1",
+                Square::D7,
+                Square::D5,
+                false,
+            ),
+            (
+                "4k3/8/8/8/4p3/8/3P4/K3R3 w - - 0 1",
+                Square::D2,
+                Square::D4,
+                false,
+            ),
+        ] {
+            let mut board = Board::from_fen(fen);
+            let initial_hash = board.zobrist_hash;
+            let mv = PieceMove::new(from, to, MoveKind::DoublePawnPush);
+            board.move_piece(mv);
+            assert_hash_correct(&board);
+            assert_eq!(Zobrist::en_passant_square(&board).is_some(), capturable);
+
+            let en_passant_move = crate::move_gen::MoveGenerator::generate_valid_moves(&mut board)
+                .into_iter()
+                .find(|mv| mv.kind == MoveKind::EnPassant);
+            assert_eq!(en_passant_move.is_some(), capturable);
+            if let Some(mv) = en_passant_move {
+                board.move_piece(mv);
+                assert_hash_correct(&board);
+                board.undo();
+                assert_hash_correct(&board);
+            }
+            board.undo();
+            assert_eq!(board.zobrist_hash, initial_hash);
+            assert_hash_correct(&board);
+        }
     }
 
     #[test]

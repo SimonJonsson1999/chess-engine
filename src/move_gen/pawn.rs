@@ -1,11 +1,55 @@
 use crate::board::Board;
 use crate::board::bitboard::BitBoard;
-use crate::board::piece::{Color, MoveKind, PieceMove, PieceMoveList, PieceType};
+use crate::board::piece::{Color, MoveKind, Piece, PieceMove, PieceMoveList, PieceType};
 use crate::board::square::Square;
 use crate::move_gen::MoveGenerator;
+use crate::move_gen::attack_table::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::move_gen::constants::{BOARDWIDTH, FILEA, FILEH, PROMOTION_PIECES, RANK2, RANK7};
 
 impl MoveGenerator {
+    pub(crate) fn has_legal_enpassant(board: &Board) -> bool {
+        let Some(to) = board.enpassant else {
+            return false;
+        };
+        let color = board.turn;
+        let expected_rank = match color {
+            Color::White => 5,
+            Color::Black => 2,
+        };
+        if to.rank() != expected_rank || !board.empty.is_set(to) {
+            return false;
+        }
+
+        let captured = Self::pawn_from_square(to, color, BOARDWIDTH);
+        if board.piece_on_square[captured] != Some(Piece::new(PieceType::Pawn, color.opposite())) {
+            return false;
+        }
+        let attackers = match color {
+            Color::White => BLACK_PAWN_ATTACKS[to],
+            Color::Black => WHITE_PAWN_ATTACKS[to],
+        } & board.bitboards[color][PieceType::Pawn];
+
+        for from in attackers.squares() {
+            // Test king safety without making a move (hash updates also use this).
+            let mut occupied = !board.empty;
+            occupied.clear(from);
+            occupied.clear(captured);
+            occupied.set(to);
+            let mut enemy_pawns = board.bitboards[color.opposite()][PieceType::Pawn];
+            enemy_pawns.clear(captured);
+            if !Self::is_square_attacked_with_occupancy(
+                board,
+                board.king(color),
+                color.opposite(),
+                occupied,
+                enemy_pawns,
+            ) {
+                return true;
+            }
+        }
+        false
+    }
+
     #[inline]
     pub(crate) fn pawn_from_square(to: Square, color: Color, offset: u8) -> Square {
         match color {

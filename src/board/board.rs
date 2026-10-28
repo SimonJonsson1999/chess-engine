@@ -77,21 +77,26 @@ impl Board {
     }
 
     pub fn game_state(&mut self) -> GameState {
+        let in_check = self.is_in_check(self.turn);
+        if !self.has_legal_moves() {
+            return if in_check {
+                GameState::Checkmate
+            } else {
+                GameState::Stalemate
+            };
+        }
+
         if self.half_move >= 100 {
             return GameState::FiftyMoveRule;
         }
-        if self.is_threefold_repetition(){
-            return GameState::DrawRepetition
+        if self.is_threefold_repetition() {
+            return GameState::DrawRepetition;
         }
 
-        let in_check = self.is_in_check(self.turn);
-        let has_moves = self.has_legal_moves();
-
-        match (in_check, has_moves) {
-            (false, true) => GameState::Ongoing,
-            (true, true) => GameState::Check,
-            (true, false) => GameState::Checkmate,
-            (false, false) => GameState::Stalemate,
+        if in_check {
+            GameState::Check
+        } else {
+            GameState::Ongoing
         }
     }
 
@@ -100,7 +105,16 @@ impl Board {
 
         let mut count = 1; // current position
 
-        for entry in self.move_log.iter().rev() {
+        // Pawn moves and captures prevent earlier positions from recurring.
+        // Only positions with the same side to move can match.
+        for entry in self
+            .move_log
+            .iter()
+            .rev()
+            .take(self.half_move as usize)
+            .skip(1)
+            .step_by(2)
+        {
             if entry.previous_zobrist_hash == current {
                 count += 1;
 

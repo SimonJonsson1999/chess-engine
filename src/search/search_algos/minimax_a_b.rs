@@ -20,17 +20,16 @@ impl<E: Evaluator> MiniMaxAlphaBetaSercher<E> {
         mut alpha: i32,
         mut beta: i32,
     ) -> i32 {
-        if depth == 0 {
-            return self.evaluator.evaluate(board);
-        }
-
         match board.game_state() {
             GameState::Checkmate => match board.turn {
                 Color::White => return -CHECKMATE_SCORE,
                 Color::Black => return CHECKMATE_SCORE,
             },
-            GameState::Stalemate => return 0,
+            GameState::Stalemate | GameState::FiftyMoveRule | GameState::DrawRepetition => return 0,
             _ => {}
+        }
+        if depth == 0 {
+            return self.evaluator.evaluate(board);
         }
         let moves = MoveGenerator::generate_valid_moves(board);
         match board.turn {

@@ -79,13 +79,27 @@ impl MoveGenerator {
     }
 
     pub(crate) fn is_square_attacked(board: &Board, square: Square, by: Color) -> bool {
-        let occupied = !board.empty;
+        Self::is_square_attacked_with_occupancy(
+            board,
+            square,
+            by,
+            !board.empty,
+            board.bitboards[by][PieceType::Pawn],
+        )
+    }
+
+    pub(crate) fn is_square_attacked_with_occupancy(
+        board: &Board,
+        square: Square,
+        by: Color,
+        occupied: BitBoard,
+        enemy_pawns: BitBoard,
+    ) -> bool {
         let diagonal = MoveGenerator::ray_attacks_from_sq(square, occupied, &DIAG_DIRECTIONS);
         let straight = MoveGenerator::ray_attacks_from_sq(square, occupied, &STRAIGHT_DIRECTIONS);
         let enemy_queens = board.bitboards[by][PieceType::Queen];
         let enemy_rooks = board.bitboards[by][PieceType::Rook];
         let enemy_bishops = board.bitboards[by][PieceType::Bishop];
-        let enemy_pawns = board.bitboards[by][PieceType::Pawn];
         let pawn_attackers = match by {
             Color::White => BLACK_PAWN_ATTACKS[square],
             Color::Black => WHITE_PAWN_ATTACKS[square],

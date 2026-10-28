@@ -13,6 +13,7 @@ impl Board {
         // Save previous castling and enpassant, and move counters
         let previous_castling_rights = self.castling_rights;
         let previous_enpassant = self.enpassant;
+        let previous_hash_enpassant = Zobrist::en_passant_square(self);
         let previous_half_move = self.half_move;
         let previous_full_move = self.full_move;
         let previous_zobrist_hash = self.zobrist_hash;
@@ -85,6 +86,8 @@ impl Board {
             _ => {}
         }
 
+        // En passant availability belongs to the next side to move.
+        self.switch_turn();
         // update zobrist hash
         self.zobrist_hash = Zobrist::update(
             self.zobrist_hash,
@@ -93,11 +96,9 @@ impl Board {
             captured_piece,
             previous_castling_rights,
             self.castling_rights,
-            previous_enpassant,
-            self.enpassant,
+            previous_hash_enpassant,
+            Zobrist::en_passant_square(self),
         );
-        // Switch the turn after a succesful move
-        self.switch_turn()
     }
 
     fn make_castle_move(&mut self, piece_move: PieceMove) {

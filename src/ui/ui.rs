@@ -71,6 +71,7 @@ impl ChessUI {
         let images = Assets::new(&texture_creator)?;
 
         'running: loop {
+            let was_game_over = self.engine.is_game_over();
             // Handle all pending events
             for event in events.poll_iter() {
                 if !self.handle_event(event) {
@@ -80,17 +81,14 @@ impl ChessUI {
 
             if !self.engine.is_game_over() {
                 self.engine.update();
-
-                if self.engine.is_game_over() {
-                    match self.engine.game_state {
-                        GameState::Checkmate | GameState::Stalemate | GameState::FiftyMoveRule | GameState::DrawRepetition => {
-                            println!("Turn: {:?}", self.engine.turn());
-                            println!("Game state: {:?}", self.engine.game_state);
-                            println!("Winner: {:?}", self.engine.turn().opposite());
-                        }
-
-                        _ => {}
-                    }
+            }
+            if !was_game_over && self.engine.is_game_over() {
+                println!("Turn: {:?}", self.engine.turn());
+                println!("Game state: {:?}", self.engine.game_state);
+                if self.engine.game_state == GameState::Checkmate {
+                    println!("Winner: {:?}", self.engine.turn().opposite());
+                } else {
+                    println!("Draw");
                 }
             }
 

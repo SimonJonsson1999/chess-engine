@@ -15,16 +15,16 @@ impl<E: Evaluator> MiniMaxSearcher<E> {
     }
     // Algortihm found here https://en.wikipedia.org/wiki/Minimax
     fn minimax(&self, board: &mut Board, depth: u8) -> i32 {
-        if depth == 0 {
-            return self.evaluator.evaluate(board);
-        }
         match board.game_state() {
             GameState::Checkmate => match board.turn {
                 Color::White => return -CHECKMATE_SCORE,
                 Color::Black => return CHECKMATE_SCORE,
             },
-            GameState::Stalemate => return 0,
+            GameState::Stalemate | GameState::FiftyMoveRule | GameState::DrawRepetition => return 0,
             _ => {}
+        }
+        if depth == 0 {
+            return self.evaluator.evaluate(board);
         }
 
         let moves = MoveGenerator::generate_valid_moves(board);
