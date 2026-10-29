@@ -17,16 +17,6 @@ enum Outcome {
     BlackWin,
 }
 
-impl Outcome {
-    fn name(self) -> &'static str {
-        match self {
-            Self::WhiteWin => "white_win",
-            Self::Draw => "draw",
-            Self::BlackWin => "black_win",
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Termination {
     Checkmate,
@@ -64,9 +54,7 @@ struct EngineScore {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Scores {
-    white_wins: usize,
     draws: usize,
-    black_wins: usize,
     engines: [EngineScore; 2],
 }
 
@@ -75,7 +63,6 @@ impl Scores {
         let black_engine = 1 - white_engine;
         match outcome {
             Outcome::WhiteWin => {
-                self.white_wins += 1;
                 self.engines[white_engine].wins += 1;
                 self.engines[black_engine].losses += 1;
             }
@@ -86,7 +73,6 @@ impl Scores {
                 }
             }
             Outcome::BlackWin => {
-                self.black_wins += 1;
                 self.engines[black_engine].wins += 1;
                 self.engines[white_engine].losses += 1;
             }
@@ -148,7 +134,7 @@ fn run_matches(
 ) -> io::Result<Scores> {
     writeln!(
         csv,
-        "game,white_engine,black_engine,result,termination,plies,elapsed_ms,white_wins,draws,black_wins"
+        "game,white_engine,black_engine,winner,termination,plies,elapsed_ms,engine_a_wins,draws,engine_b_wins"
     )?;
     csv.flush()?;
     let mut scores = Scores::default();
@@ -163,46 +149,46 @@ fn run_matches(
         ];
         let result = play(&mut Board::default(), &mut players);
         scores.record(result.outcome, white_engine);
+        let winner = match result.outcome {
+            Outcome::WhiteWin => configs[white_engine].name,
+            Outcome::BlackWin => configs[black_engine].name,
+            Outcome::Draw => "draw",
+        };
         writeln!(
             csv,
             "{},{},{},{},{},{},{},{},{},{}",
             game + 1,
             csv_field(configs[white_engine].name),
             csv_field(configs[black_engine].name),
-            result.outcome.name(),
+            csv_field(winner),
             result.termination.name(),
             result.plies,
             result.elapsed.as_millis(),
-            scores.white_wins,
+            scores.engines[0].wins,
             scores.draws,
-            scores.black_wins,
+            scores.engines[1].wins,
         )?;
         csv.flush()?;
 
         writeln!(
             output,
-            "Game {}/{} | White: {} | Black: {} | {} ({}) | {} plies, {:.2}s | White/draw/Black: {}/{}/{}",
+            "Game {}/{} | {} wins: {} | Draws: {} | {} wins: {} | Winner: {} ({}) | {} plies, {:.2}s",
             game + 1,
             game_count,
-            configs[white_engine].name,
-            configs[black_engine].name,
-            result.outcome.name(),
+            configs[0].name,
+            scores.engines[0].wins,
+            scores.draws,
+            configs[1].name,
+            scores.engines[1].wins,
+            winner,
             result.termination.name(),
             result.plies,
             result.elapsed.as_secs_f64(),
-            scores.white_wins,
-            scores.draws,
-            scores.black_wins,
         )?;
         output.flush()?;
     }
 
     writeln!(output, "\nCompleted {game_count} games")?;
-    writeln!(
-        output,
-        "White wins: {} | Draws: {} | Black wins: {}",
-        scores.white_wins, scores.draws, scores.black_wins,
-    )?;
     for (config, score) in configs.iter().zip(&scores.engines) {
         writeln!(
             output,
@@ -435,9 +421,7 @@ mod tests {
         assert_eq!(
             scores,
             Scores {
-                white_wins: 34,
                 draws: 33,
-                black_wins: 33,
                 engines: [
                     EngineScore {
                         wins: 33,
@@ -455,6 +439,7 @@ mod tests {
         let text = String::from_utf8(csv.bytes.clone()).unwrap();
         let lines: Vec<_> = text.lines().collect();
         assert_eq!(lines.len(), 101);
+        assert!(lines[0].ends_with(",engine_a_wins,draws,engine_b_wins"));
         let mut white_games = [0; 2];
         for (game, line) in lines[1..].iter().enumerate() {
             let (white, black) = if game % 2 == 0 {
@@ -463,10 +448,19 @@ mod tests {
                 ("B", "A")
             };
             assert!(line.starts_with(&format!("{},\"{white}\",\"{black}\",", game + 1)));
+            let winner = match game % 3 {
+                0 => white,
+                1 => "draw",
+                _ => black,
+            };
+            assert_eq!(
+                line.split(',').nth(3),
+                Some(format!("\"{winner}\"").as_str())
+            );
             white_games[game % 2] += 1;
         }
         assert_eq!(white_games, [50, 50]);
-        assert!(lines[100].ends_with(",34,33,33"));
+        assert!(lines[100].ends_with(",33,33,34"));
         // The header and every complete row are flushed separately.
         assert_eq!(csv.flushed.len(), 101);
         for &length in &csv.flushed {
@@ -475,7 +469,8 @@ mod tests {
         assert_eq!(csv.flushed.last(), Some(&csv.bytes.len()));
         let output = String::from_utf8(output).unwrap();
         assert!(output.contains("Completed 100 games"));
-        assert!(output.contains("White wins: 34 | Draws: 33 | Black wins: 33"));
+        assert!(output.contains("Game 1/100 | A wins: 1 | Draws: 0 | B wins: 0 | Winner: A"));
+        assert!(output.contains("Game 4/100 | A wins: 1 | Draws: 1 | B wins: 2 | Winner: B"));
         assert!(output.contains("A | Wins: 33 | Draws: 33 | Losses: 34"));
         assert!(output.contains("B | Wins: 34 | Draws: 33 | Losses: 33"));
     }

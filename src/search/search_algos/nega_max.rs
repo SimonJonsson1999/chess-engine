@@ -6,6 +6,8 @@ use crate::search::Searcher;
 use crate::board::MoveKind;
 use crate::search::{TranspositionTable, TTEntry, Bound};
 use std::cmp::Reverse;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 use rand::random;
 const CHECKMATE_SCORE: i32 = 30_000;
 const DRAW_SCORE: i32 = 0;
@@ -104,11 +106,13 @@ impl<E: Evaluator> NegaMaxAlphaBetaSearcher<E> {
     fn transposition_key(board: &Board) -> u64 {
         // The same position can have a different score with a different draw
         // history. Include reversible history and the fifty-move counter.
-        let mut key = board.zobrist_hash;
+        let mut key = DefaultHasher::new();
+        key.write_u64(board.zobrist_hash);
+        key.write_u8(board.half_move);
         for entry in board.move_log.iter().rev().take(board.half_move as usize) {
-            key = (key ^ entry.previous_zobrist_hash).wrapping_mul(0x100_0000_01B3);
+            key.write_u64(entry.previous_zobrist_hash);
         }
-        key ^ u64::from(board.half_move).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        key.finish()
     }
 
     fn ordered_moves(&self, board: &mut Board) -> Vec<PieceMove> {
@@ -218,6 +222,26 @@ mod tests {
         ];
         for &(from, to) in cycle.iter().cycle().take(plies) {
             board.move_piece(PieceMove::new(from, to, MoveKind::Quiet));
+        }
+    }
+
+    #[test]
+    fn the_same_quiet_move_in_different_positions_does_not_reuse_scores() {
+        let without_queen = "4k3/8/8/8/8/8/8/4K1N1 w - - 0 1";
+        let with_queen = "4k3/8/8/8/8/8/8/3QK1N1 w - - 0 1";
+        let mut shared = NegaMaxAlphaBetaSearcher::new(BoardEvaluation);
+
+        for fen in [without_queen, with_queen, without_queen] {
+            let mut board = Board::from_fen(fen);
+            board.move_piece(PieceMove::new(Square::G1, Square::F3, MoveKind::Quiet));
+            let mut reference = Board::from_fen(fen);
+            reference.move_piece(PieceMove::new(Square::G1, Square::F3, MoveKind::Quiet));
+            let mut fresh = NegaMaxAlphaBetaSearcher::new(BoardEvaluation);
+            let expected = fresh.negamax_alpha_beta(&mut reference, 1, 0, -i32::MAX, i32::MAX);
+            let actual = shared.negamax_alpha_beta(&mut board, 1, 0, -i32::MAX, i32::MAX);
+
+            assert_eq!(actual, expected, "Cached score leaked into {fen}");
+            assert_eq!(board, reference, "Search must restore the board and history");
         }
     }
 
